@@ -8,10 +8,10 @@ class SolveRecaptcha:
 
     def __init__(self, driver=None):
         self._driver = driver
-        self._path_audio = getcwd() + '/app/static/audio_recaptcha/audio.{}'
+        self._path_audio = getcwd() + '\\app\\static\\audio_recaptcha\\audio.{}'
 
-    def solve_by_audio(self): 
-        if not self.solve_check_box():
+    def solve_by_audio(self, default=True): 
+        if not self.solve_check_box(default, True):
             actions = self.driver.get_action_chains()
             
             # se mueve el foco a la ventana del desafio por imagenes
@@ -26,7 +26,7 @@ class SolveRecaptcha:
                 .perform()
 
             # se verifica que el desafio ha sido superado
-            while not self.solve_check_box(False):
+            while not self.solve_check_box(True, False):
                 text = ''
 
                 # se mueve el foco a la venatana del desafio por audio
@@ -47,7 +47,7 @@ class SolveRecaptcha:
                     # se obtiene el texto del audio del desafio
                     text = self.speech_to_text()
                 except (HTTPError, sr.UnknownValueError):
-                    # se busca otro desafio de auidio
+                    # se busca otro desafio de audio
                     actions\
                         .pause(2)\
                         .move_to_element(self.driver.get_element_by_xpath("//button[@class='rc-button goog-inline-block rc-button-reload']"))\
@@ -77,9 +77,9 @@ class SolveRecaptcha:
         # se mueve el foco al body
         self.driver.change_frame_by_css_selector("body")
 
-    def solve_check_box(self, click=True):
+    def solve_check_box(self, default, click):
         # se mueve el foco a la ventana del checkbox
-        self.driver.change_frame_by_css_selector("iframe[name^='a-'][src^='https://www.google.com/recaptcha/api2/anchor?']")
+        self.driver.change_frame_by_css_selector("iframe[name^='a-'][src^='https://www.google.com/recaptcha/api2/anchor?']", default)
         check_box = self.driver.get_element_by_xpath("//span[@id='recaptcha-anchor']")
 
         # se da click en el checkbox
@@ -89,6 +89,7 @@ class SolveRecaptcha:
                 .move_to_element(check_box)\
                 .pause(1)\
                 .click()\
+                .pause(1)\
                 .perform()
         
         # se verifica si el recaptcha fue resuelto

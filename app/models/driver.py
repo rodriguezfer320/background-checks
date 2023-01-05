@@ -10,7 +10,7 @@ import os
 class Driver:
 
     def __init__(self):
-        self.service = Service(executable_path=ChromeDriverManager(path=os.getcwd() + '/app/static/chromedriver').install())
+        self.service = Service(executable_path=ChromeDriverManager(path=os.getcwd() + '\\app\\static\\chromedriver').install())
         self.options = Options()
         self.browser = None
 
@@ -28,7 +28,11 @@ class Driver:
                 'prefs': {
                     'profile.default_content_setting_values.notifications': 2,
                     'intl.accept_languages': ['es-ES', 'es'],
-                    'credentials_enable_service': False
+                    'credentials_enable_service': False,
+                    'download.default_directory': os.getcwd() + '\\app\\static\\pdf', # directorio predeterminado para las descargas
+                    #'download.prompt_for_download': False, # descargar automáticamente el archivo
+                    #'download.directory_upgrade': True,
+                    #'plugins.always_open_pdf_externally': True # no mostrar el archivo PDF directamente en el navegador
                 },
                 'useAutomationExtension': False
             },
@@ -105,8 +109,9 @@ class Driver:
     def get_action_chains(self):
         return ActionChains(self.browser)
         
-    def change_frame_by_css_selector(self, css_selector):
-        self.browser.switch_to.parent_frame()
+    def change_frame_by_css_selector(self, css_selector, default=True):
+        if default:
+            self.browser.switch_to.parent_frame()
 
         if not css_selector == 'body':
             iframe = self.browser.find_element(By.CSS_SELECTOR, css_selector)

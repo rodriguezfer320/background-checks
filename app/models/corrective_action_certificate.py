@@ -1,7 +1,6 @@
-from .solve_recaptcha import SolveRecaptcha
 import json
 
-class FiscalBackground:
+class CorrectiveActionCertificate:
     
     def __init__(self, driver=None, data={}):
         self._driver = driver
@@ -15,41 +14,39 @@ class FiscalBackground:
         actions = self.driver.get_action_chains()
 
         # PÁGINA 1 - INGRESAR DATOS EN EL FORMUALRIO
-        # se mueve el foco a la ventana Certificado Para Personas Naturales
-        self.driver.change_frame_by_css_selector("iframe[src^='https://cfiscal.contraloria.gov.co/Certificados/CertificadoPersonaNatural.aspx']")
-
         # se selecciona el tipo de documento
+        select_type_doc = self.driver.get_select_by_xpath("//select[@id='ctl00_ContentPlaceHolder3_ddlTipoDoc']")
+        select_type_doc.select_by_value(self.data['tipo-documento'])
         actions\
             .pause(2)\
-            .perform()   
-        select_type_doc = self.driver.get_select_by_xpath("//select[@id='ddlTipoDocumento']")
-        select_type_doc.select_by_value(self.data['tipo-documento'])
+            .perform()
 
         # se ingresa el número del documento
         actions\
-            .pause(2)\
-            .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtNumeroDocumento']"))\
-            .pause(1)\
+            .move_to_element(self.driver.get_element_by_xpath("//input[@id='ctl00_ContentPlaceHolder3_txtExpediente']"))\
             .click_and_hold()\
-            .pause(1)\
             .send_keys(self.data['cedula'])\
             .perform()
 
-        # se resuelve el recaptcha de la pagina
-        recaptcha = SolveRecaptcha()
-        recaptcha.driver = self.driver
-        recaptcha.solve_by_audio(False)
-
-        # se da click en el boton consultar
+        # se ingresa la fecha de expedición del documento
         actions\
-            .pause(2)\
-            .move_to_element(self.driver.get_element_by_xpath("//input[@id='btnBuscar']"))\
-            .pause(1)\
-            .click()\
-            .pause(5)\
+            .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtFechaexp']"))\
+            .click_and_hold()\
+            .send_keys(self.data['fecha-expedicion'])\
             .perform()
 
-        self.background_text = "pdf descargado"
+        # se da click en el icono de buscar (simbolo de la lupa)
+        actions\
+            .move_to_element(self.driver.get_element_by_xpath("//a[@id='ctl00_ContentPlaceHolder3_btnConsultar2']"))\
+            .click()\
+            .perform()
+
+        # PÁGINA 2 - OBTENER RESULTADO DE LA CONSULTA DE LOS ANTECEDENTES
+        # se acceden al selector que contienen la información
+        div = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']")
+        
+        # se obtiene el texto del elemento div
+        self.background_text = self.background_text + div.text
 
         # se cierra el navegador
         self.driver.close_browser()
@@ -82,5 +79,5 @@ class FiscalBackground:
 
     def to_json(self):
         return json.dumps({
-            'antecedente-fiscal': self.background_text
+            'certificado-medidas-corretivas': self.background_text
         })    

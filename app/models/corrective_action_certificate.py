@@ -42,7 +42,7 @@ class CorrectiveActionCertificate:
             .perform()
 
         # PÁGINA 2 - OBTENER RESULTADO DE LA CONSULTA DE LOS ANTECEDENTES
-        # se acceden al selector que contienen la información
+        # se acceden al selector que contiene la información
         div = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']")
         
         # se obtiene el texto del elemento div

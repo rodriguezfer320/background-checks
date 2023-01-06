@@ -4,6 +4,7 @@ from ..models.driver import Driver
 from ..models.judicial_background import JudicialBackground
 from ..models.fiscal_background import FiscalBackground
 from ..models.corrective_action_certificate import CorrectiveActionCertificate
+from ..models.military_situation import MilitarySituation
 
 api_scope = Blueprint('api', __name__)
 
@@ -30,7 +31,6 @@ def background_check():
         'tipo-documento': 'CC'
     }
     background.search_for_background()
-    '''
 
     background = CorrectiveActionCertificate()
     background.driver = driver
@@ -39,6 +39,16 @@ def background_check():
         'cedula': '1118310093',
         'tipo-documento': '55',
         'fecha-expedicion': '08/08/2017'
+    }
+    background.search_for_background()
+    '''
+
+    background = MilitarySituation()
+    background.driver = driver
+    background.data = {
+        'url': 'https://www.libretamilitar.mil.co/Modules/Consult/MilitarySituation',
+        'cedula': '98073060443',#'1118310093',
+        'tipo-documento': '100000000'#'100000001'
     }
     background.search_for_background()
 

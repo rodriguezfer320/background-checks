@@ -1,22 +1,20 @@
-import json
+from .background import Background
 
-class CorrectiveActionCertificate:
+class CorrectiveActionBackground(Background):
     
-    def __init__(self, driver=None, data={}):
-        self._driver = driver
-        self._data = data
-        self._background_text = ''
+    def __init__(self, driver=None):
+        super().__init__(driver)
 
-    def search_for_background(self):
-        # se accede a la url del antecedente judicial
-        self.driver.load_browser(self.data['url'])
+    def search_for_background(self, data):
+        # se accede a la url del antecedente
+        self.driver.load_browser(data['url'])
         
         actions = self.driver.get_action_chains()
 
         # PÁGINA 1 - INGRESAR DATOS EN EL FORMUALRIO
         # se selecciona el tipo de documento
         select_type_doc = self.driver.get_select_by_xpath("//select[@id='ctl00_ContentPlaceHolder3_ddlTipoDoc']")
-        select_type_doc.select_by_value(self.data['tipo-documento'])
+        select_type_doc.select_by_value(data['tipo-documento'])
         actions\
             .pause(2)\
             .perform()
@@ -25,14 +23,14 @@ class CorrectiveActionCertificate:
         actions\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='ctl00_ContentPlaceHolder3_txtExpediente']"))\
             .click_and_hold()\
-            .send_keys(self.data['cedula'])\
+            .send_keys(data['cedula'])\
             .perform()
 
         # se ingresa la fecha de expedición del documento
         actions\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtFechaexp']"))\
             .click_and_hold()\
-            .send_keys(self.data['fecha-expedicion'])\
+            .send_keys(data['fecha-expedicion'])\
             .perform()
 
         # se da click en el icono de buscar (simbolo de la lupa)
@@ -46,38 +44,7 @@ class CorrectiveActionCertificate:
         div = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']")
         
         # se obtiene el texto del elemento div
-        self.background_text = self.background_text + div.text
+        self.text = self.text + div.text
 
         # se cierra el navegador
         self.driver.close_browser()
-
-    #Getters
-    @property
-    def driver(self):
-        return self._driver
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def background_text(self):
-        return self._background_text
-
-    #Setters
-    @driver.setter
-    def driver(self, driver):
-        self._driver = driver
-
-    @data.setter
-    def data(self, data):
-        self._data = data
-
-    @background_text.setter
-    def background_text(self, text):
-        self._background_text = text
-
-    def to_json(self):
-        return json.dumps({
-            'certificado-medidas-corretivas': self.background_text
-        })    

@@ -1,16 +1,14 @@
+from ..models.background import Background
 from .solve_recaptcha import SolveRecaptcha
-import json
 
-class FiscalBackground:
+class FiscalBackground(Background):
     
-    def __init__(self, driver=None, data={}):
-        self._driver = driver
-        self._data = data
-        self._background_text = ''
+    def __init__(self, driver=None):
+        super().__init__(driver)
 
-    def search_for_background(self):
-        # se accede a la url del antecedente judicial
-        self.driver.load_browser(self.data['url'])
+    def search_for_background(self, data):
+        # se accede a la url del antecedente
+        self.driver.load_browser(data['url'])
         
         actions = self.driver.get_action_chains()
 
@@ -23,7 +21,7 @@ class FiscalBackground:
             .pause(2)\
             .perform()   
         select_type_doc = self.driver.get_select_by_xpath("//select[@id='ddlTipoDocumento']")
-        select_type_doc.select_by_value(self.data['tipo-documento'])
+        select_type_doc.select_by_value(data['tipo-documento'])
 
         # se ingresa el número del documento
         actions\
@@ -32,7 +30,7 @@ class FiscalBackground:
             .pause(1)\
             .click_and_hold()\
             .pause(1)\
-            .send_keys(self.data['cedula'])\
+            .send_keys(data['cedula'])\
             .perform()
 
         # se resuelve el recaptcha de la pagina
@@ -49,38 +47,7 @@ class FiscalBackground:
             .pause(5)\
             .perform()
 
-        self.background_text = "pdf descargado"
+        self.text = "pdf descargado"
 
         # se cierra el navegador
         self.driver.close_browser()
-
-    #Getters
-    @property
-    def driver(self):
-        return self._driver
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def background_text(self):
-        return self._background_text
-
-    #Setters
-    @driver.setter
-    def driver(self, driver):
-        self._driver = driver
-
-    @data.setter
-    def data(self, data):
-        self._data = data
-
-    @background_text.setter
-    def background_text(self, text):
-        self._background_text = text
-
-    def to_json(self):
-        return json.dumps({
-            'antecedente-fiscal': self.background_text
-        })    

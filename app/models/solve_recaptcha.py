@@ -1,4 +1,3 @@
-from selenium.webdriver.common.action_chains import ActionChains
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
 from os import getcwd
@@ -106,7 +105,7 @@ class SolveRecaptcha:
         sf.write(self._path_audio.format('wav'), data, sample_rate)
 
     def speech_to_text(self):
-        text = None
+        text = ''
 
         # se carga el archivo de audio
         sample_audio = sr.AudioFile(self._path_audio.format('wav'))

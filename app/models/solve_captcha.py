@@ -25,8 +25,8 @@ class SolveCaptcha:
 
             if question.startswith("Cuanto es", 2, 11):
                 data = question.split(' ')
-                a = int(data[3])
-                b = int(data[5])
+                a = int(data[3].strip())
+                b = int(data[5].strip())
 
                 if data[4] == '+': result = a + b
                 elif data[4] == '-': result = a - b

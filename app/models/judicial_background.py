@@ -68,6 +68,10 @@ class JudicialBackground(Background):
             .perform()
         spans = self.driver.get_element_by_xpath("//div[@id='form:j_idt8_content'] //span", True)
         
+        actions\
+            .pause(2)\
+            .perform()
+            
         # se obtiene el texto de los selectores span
         for element in spans:
             self.text = self.text + element.text

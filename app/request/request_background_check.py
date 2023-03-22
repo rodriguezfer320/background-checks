@@ -12,9 +12,9 @@ request_background_check = {
                     'disciplinary',
                     'fiscal', 
                     'judicial',
-                    'corrective-actions',
-                    'military-situation',
-                    'traffic-infraction'
+                    'corrective actions',
+                    'military situation',
+                    'traffic infraction'
                 ]
             },
             'minItems': 1, 

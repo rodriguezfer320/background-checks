@@ -3,7 +3,13 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,flask,python,venv
 
 # Propios
-static/
+app/static/audio_recaptcha/*
+app/static/chromedriver/*
+app/static/pdf/*
+
+!app/static/audio_recaptcha/.gitkeep
+!app/static/chromedriver/.gitkeep
+!app/static/pdf/.gitkeep
 
 ### Flask ###
 instance/*

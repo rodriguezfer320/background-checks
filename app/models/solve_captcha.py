@@ -1,15 +1,9 @@
-from urllib.request import urlretrieve
-from os import getcwd
-from pytesseract import image_to_string
-import cv2
-
 class SolveCaptcha:
 
     def __init__(self, driver=None):
         self._driver = driver
 
     def solve_by_question(self, document):
-        actions = self.driver.get_action_chains()
         questions = {
             '¿Escriba los tres primeros digitos del documento a consultar?': document[0:3],  
             '¿Escriba los dos ultimos digitos del documento a consultar?': document[-2:],
@@ -18,6 +12,9 @@ class SolveCaptcha:
             '¿ Cual es la Capital de Colombia (sin tilde)?': 'bogota',
             '¿ Cual es la Capital de Antioquia (sin tilde)?': 'medellin'
         }
+
+        # se carga el controlador de acciones de entrada de dispositivo virtualizadas
+        actions = self.driver.get_action_chains()
 
         while True:
             question = self.driver.get_element_by_xpath("//span[@id='lblPregunta']").text

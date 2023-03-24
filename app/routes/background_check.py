@@ -1,94 +1,102 @@
 from flask import Blueprint, request, jsonify
 from flask_expects_json import expects_json
 from datetime import datetime
-from ..models.driver import Driver
-from ..models.disciplinary_background import DisciplinaryBackground
-from ..models.fiscal_background import FiscalBackground
-from ..models.judicial_background import JudicialBackground
-from ..models.corrective_action_background import CorrectiveActionBackground
-from ..models.military_situation_background import MilitarySituationBackground
-from ..models.traffic_infraction_background import TrafficInfractionBackground
-from ..models.database import session
-from ..entities.background import Background
-from ..entities.candidate_background import CandidateBackground
-from ..request.request_background_check import request_background_check
+from app.models.driver import Driver
+from app.models.disciplinary_background import DisciplinaryBackground
+from app.models.fiscal_background import FiscalBackground
+from app.models.judicial_background import JudicialBackground
+from app.models.corrective_action_background import CorrectiveActionBackground
+from app.models.military_situation_background import MilitarySituationBackground
+from app.models.traffic_infraction_background import TrafficInfractionBackground
+from app.models.database_connection import session
+from app.entities.background import Background
+from app.entities.candidate_background import CandidateBackground
+from app.request.request_background_check import request_background_check
 
 background_check_scope = Blueprint('api', __name__)
 
 @background_check_scope.route('verificacion-antecedentes', methods=('GET',))
 @expects_json(request_background_check)
 def background_check():
+    # se obtinen los datos enviados
     request_data = request.get_json()
+
+    # se carga el driver que permite interactuar con el navegador
     driver = Driver()
     driver.load_options()
+    
     result = {}
 
     for ant in request_data['antecedents']:
         text = None
-        background = session.query(Background).filter(Background.name == ant).first()
+
+        # se consultan los datos del antecdente en la BD
+        background = session.query(Background).get(int(ant))
+
+        # se consulta la información del antecdente asociado al candidato en la BD
         candidate_background = session.query(CandidateBackground).\
                                        filter(CandidateBackground.candidate_id == int(request_data['document']), 
                                               CandidateBackground.background_id == background.id).\
                                        first()
 
+        # se válida el tipo de antecedente
         if background.type == 'web':
             days = 1
 
-            if candidate_background is not None:
+            # si el antecdente ya ha sido consultado, se verifica que hayan pasado 24h
+            if (candidate_background is not None and 
+                candidate_background.description != 'No se pudo obtener la información del canditato en este antecdente, debido a que, ocurrio un error inesperado.'):
                 now = datetime.now()
                 diff = now - candidate_background.updated_at
                 days = diff.days
             
+            # si han pasado 24h, se consulta el antecdente en la web
             if days >= 1:
                 antecedent = None
                 data = {
-                    'cedula': request_data['document']
+                    'cedula': request_data['document'],
+                    'fecha-expedicion': '08/08/2016',
+                    'url': background.url
                 }
 
-                if ant == 'disciplinary':
-                    antecedent = DisciplinaryBackground()
-                    data['url'] = 'https://www.procuraduria.gov.co/Pages/Generacion-de-antecedentes.aspx'
-                    data['tipo-documento'] = '1'
-                elif ant == 'fiscal':
-                    antecedent = FiscalBackground()
-                    data['url'] = 'https://www.contraloria.gov.co/web/guest/persona-natural'
-                    data['tipo-documento'] = 'CC'
-                elif ant == 'judicial':
-                    antecedent = JudicialBackground()
-                    data['url'] = 'https://antecedentes.policia.gov.co:7005/WebJudicial/index.xhtml'
-                    data['tipo-documento'] = 'cc'
-                elif ant == 'corrective actions':
-                    antecedent = CorrectiveActionBackground()
-                    data['url'] = 'https://srvcnpc.policia.gov.co/PSC/frm_cnp_consulta.aspx'
-                    data['tipo-documento'] = '55'
-                    data['fecha-expedicion'] = '08/08/2016'
-                elif ant == 'military situation': 
-                    antecedent = MilitarySituationBackground()
-                    data['url'] = 'https://www.libretamilitar.mil.co/Modules/Consult/MilitarySituation'
-                    data['tipo-documento'] = '100000001'
-                elif ant == 'traffic infraction':
-                    antecedent = TrafficInfractionBackground()
-                    data['url'] = 'http://www2.simit.org.co/Simit/verificar/contenido_verificar_pago_linea.jsp'
-                    data['tipo-documento'] = '1'
+                if background.name == 'disciplinary': antecedent = DisciplinaryBackground()
+                elif background.name == 'fiscal': antecedent = FiscalBackground()
+                elif background.name == 'judicial': antecedent = JudicialBackground()
+                elif background.name == 'corrective actions': antecedent = CorrectiveActionBackground()
+                elif background.name == 'military situation': antecedent = MilitarySituationBackground()
+                elif background.name == 'traffic infraction': antecedent = TrafficInfractionBackground()
                 
                 antecedent.driver = driver
-                antecedent.search_for_background(data)
-                text = antecedent.text
 
-                _candidate_background = CandidateBackground(
-                    candidate_id = int(request_data['document']), 
-                    background_id = background.id, 
-                    description = text
-                )
-                session.add(_candidate_background)
+                # se consulta la información del antecdente en la web correpondiente
+                try:
+                    antecedent.search_for_background(data)
+                    text = antecedent.text
+                except:
+                    antecedent.driver.close_browser()
+                    text = 'No se pudo obtener la información del canditato en este antecdente, debido a que, ocurrio un error inesperado.'
+
+                # si el antecdente no se a registrado en la BD, se inerta
+                if candidate_background is None:
+                    candidate_background = CandidateBackground(
+                        candidate_id = int(request_data['document']), 
+                        background_id = background.id, 
+                        description = text
+                    )
+                    session.add(candidate_background)
+                else: # si el antecdente estaregistrado en la BD, se actualiza
+                    candidate_background.description = text
+                
                 session.commit()
-            else:
+            else: # sino han pasado 24h, se obtiene la información de la BD
                 text = candidate_background.description                
-        else:
+        else:# antededentes que no se consultan en una web
             pass
-
-        result[ant] = text
         
+        # se añade la información obtenida
+        result[background.name] = text
+    
+    # se genera una respuesta en formato JSON
     return jsonify({
         'results-background': result
     })

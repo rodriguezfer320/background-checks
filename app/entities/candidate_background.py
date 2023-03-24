@@ -1,4 +1,4 @@
-from app.models.database import Base
+from app.models.database_connection import Base
 from sqlalchemy import Column, Integer, ForeignKey, String, TIMESTAMP, text
 from sqlalchemy.orm import relationship
 
@@ -8,7 +8,7 @@ class CandidateBackground(Base):
     background_id = Column(Integer, ForeignKey('background.id'), primary_key=True)
     description  = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     background = relationship('Background', back_populates='candidate_background')
 
     def __init__(self, candidate_id, background_id, description):

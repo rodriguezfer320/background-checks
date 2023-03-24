@@ -97,6 +97,9 @@ class Driver:
     def close_browser(self):
         self.browser.close()
 
+    def get_action_chains(self):
+        return ActionChains(self.browser)
+
     def get_element_by_xpath(self, xpath, multiple=False):
         if multiple:
             return self.browser.find_elements(By.XPATH, xpath)
@@ -105,9 +108,6 @@ class Driver:
 
     def get_select_by_xpath(self, xpath):
         return Select(self.get_element_by_xpath(xpath))
-
-    def get_action_chains(self):
-        return ActionChains(self.browser)
         
     def change_frame_by_css_selector(self, css_selector, default=True):
         if default:

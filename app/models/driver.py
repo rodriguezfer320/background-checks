@@ -5,12 +5,12 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
-import os
+from os import getcwd
 
 class Driver:
 
     def __init__(self):
-        self.service = Service(executable_path=ChromeDriverManager(path=os.getcwd() + '\\app\\static\\chromedriver').install())
+        self.service = Service(executable_path=ChromeDriverManager(path=getcwd() + '\\app\\static\\chromedriver').install())
         self.options = Options()
         self.browser = None
 
@@ -29,7 +29,7 @@ class Driver:
                     'profile.default_content_setting_values.notifications': 2,
                     'intl.accept_languages': ['es-ES', 'es'],
                     'credentials_enable_service': False,
-                    'download.default_directory': os.getcwd() + '\\app\\static\\pdf', # directorio predeterminado para las descargas
+                    'download.default_directory': getcwd() + '\\app\\static\\pdf', # directorio predeterminado para las descargas
                     #'download.prompt_for_download': False, # descargar automáticamente el archivo
                     #'download.directory_upgrade': True,
                     #'plugins.always_open_pdf_externally': True # no mostrar el archivo PDF directamente en el navegador

@@ -1,4 +1,4 @@
-from ..models.background import Background
+from .background import Background
 from .solve_recaptcha import SolveRecaptcha
 from os import getcwd, remove
 import PyPDF2

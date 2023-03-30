@@ -11,6 +11,7 @@ class Background(Base):
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     candidate_background = relationship('CandidateBackground', back_populates='background')
+    verification_request_background = relationship('VerificationRequest', back_populates='background')
 
     def __init__(self, name, url, type):
         self.name = name

@@ -1,5 +1,5 @@
 from .background import Background
-from ..models.solve_captcha import SolveCaptcha
+from .solve_captcha import SolveCaptcha
 from os import getcwd, remove
 import PyPDF2
 

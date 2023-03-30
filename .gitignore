@@ -6,10 +6,12 @@
 app/static/audio_recaptcha/*
 app/static/chromedriver/*
 app/static/pdf/*
+app/static/verification_request_files/*
 
 !app/static/audio_recaptcha/.gitkeep
 !app/static/chromedriver/.gitkeep
 !app/static/pdf/.gitkeep
+!app/static/verification_request_files/.gitkeep
 
 ### Flask ###
 instance/*

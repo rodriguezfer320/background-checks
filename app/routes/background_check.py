@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify
-from flask_expects_json import expects_json
+from flask import jsonify
+from flask_smorest import Blueprint
 from datetime import datetime
 from app.models.driver import Driver
 from app.models.disciplinary_background import DisciplinaryBackground
@@ -11,36 +11,34 @@ from app.models.traffic_infraction_background import TrafficInfractionBackground
 from app.models.database_connection import session
 from app.entities.background import Background
 from app.entities.candidate_background import CandidateBackground
-from app.request.request_background_check import request_background_check
+from app.entities.verification_request import VerificationRequest
+from app.schemas.background_check_schema import GetDataSchema
 
-background_check_scope = Blueprint('api', __name__)
+bbc = Blueprint('background_check', __name__, url_prefix='/api/verificacion-antecedentes', description='Operaciones de verificación de antecedentes.')
 
-@background_check_scope.route('verificacion-antecedentes', methods=('GET',))
-@expects_json(request_background_check)
-def background_check():
-    # se obtinen los datos enviados
-    request_data = request.get_json()
-
+@bbc.get('/')
+@bbc.arguments(GetDataSchema, location='json')
+def get_antecedents(data):
     # se carga el driver que permite interactuar con el navegador
     driver = Driver()
     driver.load_options()
     
     result = {}
 
-    for ant in request_data['antecedents']:
+    for ant in data['antecedents']:
         text = None
 
-        # se consultan los datos del antecdente en la BD
-        background = session.query(Background).get(int(ant))
-
-        # se consulta la información del antecdente asociado al candidato en la BD
-        candidate_background = session.query(CandidateBackground).\
-                                       filter(CandidateBackground.candidate_id == int(request_data['document']), 
-                                              CandidateBackground.background_id == background.id).\
-                                       first()
+        # se consultan los datos del antecedente en la BD
+        background = session.query(Background).get(ant)
 
         # se válida el tipo de antecedente
         if background.type == 'web':
+            # se consulta la información del antecdente asociado al candidato en la BD
+            candidate_background = session.query(CandidateBackground)\
+                                          .filter(CandidateBackground.candidate_id == data['document'])\
+                                          .filter(CandidateBackground.background_id == background.id)\
+                                          .first()
+            
             days = 1
 
             # si el antecdente ya ha sido consultado, se verifica que hayan pasado 24h
@@ -53,11 +51,6 @@ def background_check():
             # si han pasado 24h, se consulta el antecdente en la web
             if days >= 1:
                 antecedent = None
-                data = {
-                    'cedula': request_data['document'],
-                    'fecha-expedicion': '08/08/2016',
-                    'url': background.url
-                }
 
                 if background.name == 'disciplinary': antecedent = DisciplinaryBackground()
                 elif background.name == 'fiscal': antecedent = FiscalBackground()
@@ -70,7 +63,11 @@ def background_check():
 
                 # se consulta la información del antecdente en la web correpondiente
                 try:
-                    antecedent.search_for_background(data)
+                    antecedent.search_for_background({
+                        'cedula': data['document'],
+                        'fecha-expedicion': '08/08/2016',
+                        'url': background.url
+                    })
                     text = antecedent.text
                 except:
                     antecedent.driver.close_browser()
@@ -79,19 +76,29 @@ def background_check():
                 # si el antecdente no se a registrado en la BD, se inerta
                 if candidate_background is None:
                     candidate_background = CandidateBackground(
-                        candidate_id = int(request_data['document']), 
+                        candidate_id = data['document'], 
                         background_id = background.id, 
                         description = text
                     )
                     session.add(candidate_background)
                 else: # si el antecdente estaregistrado en la BD, se actualiza
                     candidate_background.description = text
+                    candidate_background.updated_at = datetime.now()
                 
                 session.commit()
             else: # sino han pasado 24h, se obtiene la información de la BD
                 text = candidate_background.description                
         else:# antededentes que no se consultan en una web
-            pass
+            verification_request = session.query(VerificationRequest)\
+                                          .filter(VerificationRequest.candidate_id == data['document'])\
+                                          .filter(VerificationRequest.background_id == background.id)\
+                                          .first()
+            
+            if background.name == 'university degree': 
+                if verification_request is None or verification_request.state != 'aprobada':
+                    text = 'El candidato no ha cargado su título académico o esta en proceso de validación.'
+                else:
+                    text = verification_request.comment
         
         # se añade la información obtenida
         result[background.name] = text

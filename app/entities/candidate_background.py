@@ -6,7 +6,7 @@ class CandidateBackground(Base):
     __tablename__ = 'candidate_background'
     candidate_id = Column(Integer, primary_key=True)
     background_id = Column(Integer, ForeignKey('background.id'), primary_key=True)
-    description  = Column(String, nullable=False)
+    description = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     background = relationship('Background', back_populates='candidate_background')

@@ -1,5 +1,5 @@
-from ..models.background import Background
-from ..models.solve_recaptcha import SolveRecaptcha
+from .background import Background
+from .solve_recaptcha import SolveRecaptcha
 
 class JudicialBackground(Background):
     

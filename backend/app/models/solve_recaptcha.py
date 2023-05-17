@@ -1,15 +1,15 @@
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
-from os import getcwd
 import speech_recognition as sr, soundfile as sf
 
 class SolveRecaptcha:
 
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         self._driver = driver
-        self._path_audio = getcwd() + '\\app\\static\\audio_recaptcha\\audio.{}'
+        self._path_audio = driver.dir_download + 'audio-recaptcha.{}'
 
     def solve_by_audio(self, default=True): 
+        # se da click en el checkbox y verifica si el desafio ha sido superado
         if not self.solve_check_box(default, True):
             # se carga el controlador de acciones de entrada de dispositivo virtualizadas
             actions = self.driver.get_action_chains()
@@ -24,7 +24,7 @@ class SolveRecaptcha:
                 .click()\
                 .perform()
 
-            # se verifica que el desafio ha sido superado
+            # se verifica si el desafio ha sido superado
             while not self.solve_check_box(True, False):
                 # se mueve el foco a la venatana del desafio por audio
                 self.driver.change_frame_by_css_selector("iframe[name^='c-'][src^='https://www.google.com/recaptcha/api2/bframe?']")

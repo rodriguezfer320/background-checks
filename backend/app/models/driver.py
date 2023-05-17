@@ -10,9 +10,15 @@ from os import getcwd
 class Driver:
 
     def __init__(self):
-        self.service = Service(executable_path=ChromeDriverManager(path=getcwd() + '\\app\\static\\chromedriver').install())
+        self.dir_download = getcwd() + '\\app\\static\\download\\'
         self.options = Options()
         self.browser = None
+        path = ''
+
+        try: path = ChromeDriverManager(path=self.dir_download).install()
+        except: path = self.dir_download + '.wdm\\drivers\\chromedriver\\win32\\112.0.5615\\chromedriver.exe'
+        
+        self.service = Service(executable_path=path)
 
     def load_options(self):
         options = {
@@ -29,7 +35,7 @@ class Driver:
                     'profile.default_content_setting_values.notifications': 2,
                     'intl.accept_languages': ['es-ES', 'es'],
                     'credentials_enable_service': False,
-                    'download.default_directory': getcwd() + '\\app\\static\\pdf', # directorio predeterminado para las descargas
+                    'download.default_directory': self.dir_download, # directorio predeterminado para las descargas
                     #'download.prompt_for_download': False, # descargar automáticamente el archivo
                     #'download.directory_upgrade': True,
                     #'plugins.always_open_pdf_externally': True # no mostrar el archivo PDF directamente en el navegador
@@ -81,7 +87,7 @@ class Driver:
         }
 
         self.options.page_load_strategy = 'normal'
-        self.options.headless = False # inicia el navegador en segundo plano
+        self.options.headless = False # (True) inicia el navegador en segundo plano
 
         for (key, value) in options['exp_opt'].items():
             self.options.add_experimental_option(key, value)

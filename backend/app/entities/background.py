@@ -1,8 +1,8 @@
-from app.models.database_connection import Base
-from sqlalchemy import Column, Integer, String, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, TIMESTAMP, text, inspect
 from sqlalchemy.orm import relationship
+from ..database import db
 
-class Background(Base):
+class BackgroundModel(db.Model):
     __tablename__ = 'background'
     id = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(String(50), nullable=False, unique=True)
@@ -10,8 +10,8 @@ class Background(Base):
     type = Column(String(10), nullable=False)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    candidate_background = relationship('CandidateBackground', back_populates='background')
-    verification_request_background = relationship('VerificationRequest', back_populates='background')
+    candidate_background = relationship('CandidateBackgroundModel', back_populates='background')
+    candidate_verification_request = relationship('VerificationRequestModel', back_populates='background')
 
     def __init__(self, name, url, type):
         self.name = name
@@ -19,11 +19,4 @@ class Background(Base):
         self.type = type
 
     def to_json(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'url': self.url,
-            'type': self.type,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at
-        }
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

@@ -1,8 +1,8 @@
-from .background import Background
+from . import Background
 
 class CorrectiveActionBackground(Background):
     
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         super().__init__(driver)
 
     def search_for_background(self, data):
@@ -36,10 +36,11 @@ class CorrectiveActionBackground(Background):
 
         # PÁGINA 2 - OBTENER RESULTADO DE LA CONSULTA DE LOS ANTECEDENTES
         # se accede al selector que contiene la información
-        div = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']")
-        
-        # se añade la información obtenida a una variable
-        self.text = div.text
+        div_info = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']").text
 
         # se cierra el navegador
         self.driver.close_browser()
+        
+        # se añade la información obtenida a una variable
+        self.text['title'] = div_info[div_info.index('La Policía Nacional de Colombia informa:'):div_info.index('Que a la fecha')].strip()
+        self.text['message'] = div_info[div_info.index('Que a la fecha'):div_info.index('De conformidad con la Ley')].strip()

@@ -1,16 +1,22 @@
 from abc import ABC, abstractmethod
 
 class Background(ABC):
-    
+
     def __init__(self, driver):
         self._driver = driver
-        self._text = ''
+        self._text = {
+            'title': None,
+            'date': None,
+            'message': None,
+            'data': None,
+            'link': None
+        }
 
     @abstractmethod
     def search_for_background(self, data):
         pass
 
-    #Getters
+    # Getters
     @property
     def driver(self):
         return self._driver
@@ -19,11 +25,11 @@ class Background(ABC):
     def text(self):
         return self._text
 
-    #Setters
+    # Setters
     @driver.setter
     def driver(self, driver):
         self._driver = driver
 
     @text.setter
     def text(self, text):
-        self._text = text 
+        self._text = text

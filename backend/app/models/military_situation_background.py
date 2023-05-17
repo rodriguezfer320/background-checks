@@ -1,8 +1,8 @@
-from .background import Background
+from . import Background
 
 class MilitarySituationBackground(Background):
     
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         super().__init__(driver)
 
     def search_for_background(self, data):
@@ -36,24 +36,27 @@ class MilitarySituationBackground(Background):
 
         # redacción del mensaje del antecedente con la información obtiene del sitio web        
         message = 'El ciudadano identificado con el número de documento {}, '.format(data['cedula'])
-
+        dataDoc = ''
+        
         if display_prop == 'none':
-            message += 'NO TIENE DEFINIDA SU SITUACIÓN MILITAR.\n'
-            message += 'Motivos:\n'
-            message += '• La libreta militar no se encontró o fue expedida antes del año de 1990.\n'
-            message += '• El trámite se pudo haber realizado con la tarjeta de identidad.\n'
-            message += '• El ciudadano no ha terminado el proceso de definición de su situación militar.\n'
-            message += '• El documento pertenece a una mujer y la ley establece que no es obligatorio el servicio militar, sino que es voluntario.'
+            message += 'NO TIENE DEFINIDA SU SITUACIÓN MILITAR.'
+            dataDoc = 'Motivos:\n'
+            dataDoc += '• La libreta militar no se encontró o fue expedida antes del año de 1990.\n'
+            dataDoc += '• El trámite se pudo haber realizado con la tarjeta de identidad.\n'
+            dataDoc += '• El ciudadano no ha terminado el proceso de definición de su situación militar.\n'
+            dataDoc += '• El documento pertenece a una mujer y la ley establece que no es obligatorio el servicio militar, sino que es voluntario.'
         else:
-            message += 'TIENE DEFINIDA SU SITUACIÓN MILITAR.\n'
-            message += 'Datos refrentes:\n'
-            message += '• Nombres y apellidos: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text)
-            message += '• Tipo de documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text)
-            message += '• Documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text)
-            message += '• Clase de libreta militar: {}'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text)
+            message += 'TIENE DEFINIDA SU SITUACIÓN MILITAR.'
+            dataDoc = 'Datos referentes:\n'
+            dataDoc += '• Nombres y apellidos: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text)
+            dataDoc += '• Tipo de documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text)
+            dataDoc += '• Documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text)
+            dataDoc += '• Clase de libreta militar: {}'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text)
 
         # se añade la información obtenida a una variable
-        self.text = message
+        self.text['title'] = 'FUERZAS MILITARES DE COLOMBIA - COMANDO DE RECLUTAMIENTO Y CONTROL RESERVAS'
+        self.text['message'] = message
+        self.text['data'] = dataDoc
 
         # se cierra el navegador
         self.driver.close_browser()  

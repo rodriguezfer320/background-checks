@@ -1,12 +1,12 @@
-from .background import Background
-from .solve_recaptcha import SolveRecaptcha
-from os import getcwd, remove
+from . import Background, SolveRecaptcha
+from os import remove
 import PyPDF2
 
 class FiscalBackground(Background):
     
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         super().__init__(driver)
+        self.path_pdf = driver.dir_download + '{filename}.pdf'
 
     def search_for_background(self, data):
         # se accede a la url del antecedente
@@ -35,8 +35,7 @@ class FiscalBackground(Background):
             .perform()
 
         # 3. se resuelve el recaptcha de la pagina
-        recaptcha = SolveRecaptcha()
-        recaptcha.driver = self.driver
+        recaptcha = SolveRecaptcha(self.driver)
         recaptcha.solve_by_audio(False)
 
         # 4. se da click en el botón consultar
@@ -51,20 +50,17 @@ class FiscalBackground(Background):
         self.driver.close_browser()
         
         # se obtiene el texto del archivo pdf
-        path_pdf = getcwd() + f'\\app\\static\\pdf\\{data["cedula"]}.pdf'
-
-        with open(path_pdf, 'rb') as pdf_file:
+        with open(self.path_pdf.format(filename=data["cedula"]), 'rb') as pdf_file:
             pdf_reader = PyPDF2.PdfFileReader(pdf_file)
             extract_text = pdf_reader.getPage(0).extractText().strip()
-
-            message = extract_text[0:363]  + '\n'
-            message += extract_text[738:753] + ':' + extract_text[753:775]
-            message += extract_text[775:793] + ':' + extract_text[793:804]
-            message += extract_text[803:827] + ':' + extract_text[827:850] + '\n\n'
-            message += extract_text[366:729]
+            title = extract_text[extract_text.index('LA CONTRALORÍA'):extract_text.index('Que una vez consultado')].strip()
+            message = extract_text[extract_text.index('Que una vez consultado'):extract_text.index('Esta Certificación es válida')].strip()
+            dataDoc = extract_text[extract_text.index('Tipo Documento'):extract_text.index('Generó: WEB')].strip()
 
         # se elimina el archivo pdf descargado
-        remove(path_pdf)
+        remove(self.path_pdf.format(filename=data["cedula"]))
 
         # se añade la información obtenida a una variable
-        self.text = message
+        self.text['title'] = title
+        self.text['message'] = message
+        self.text['data'] = dataDoc

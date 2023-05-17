@@ -1,6 +1,6 @@
 class SolveCaptcha:
 
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         self._driver = driver
 
     def solve_by_question(self, document):
@@ -17,9 +17,11 @@ class SolveCaptcha:
         actions = self.driver.get_action_chains()
 
         while True:
+            # se obitine la pregunta generada por el captcha
             question = self.driver.get_element_by_xpath("//span[@id='lblPregunta']").text
             result = None
 
+            # si la pregunta es una opraciòn matematica se resulve
             if question.startswith("Cuanto es", 2, 11):
                 data = question.split(' ')
                 a = int(data[3].strip())
@@ -29,12 +31,13 @@ class SolveCaptcha:
                 elif data[4] == '-': result = a - b
                 elif data[4] == 'X': result = a * b
                 elif b > 0: result = a / b
-            else:
+            else: # si la pregunta es mas especifica, se obtiene la respuesta del banco de preguntas
                 for (key, value) in questions.items():
                     if question == key:
                         result = value
                         break
-
+            
+            # si no hay una respuesta para la pregunta, se busca otra
             if result is None:
                 # se busca una nueva pregunta
                 actions\

@@ -3,14 +3,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,flask,python,venv
 
 # Propios
-app/static/audio_recaptcha/*
-app/static/chromedriver/*
-app/static/pdf/*
-app/static/verification_request_files/*
+app/static/*
 
-!app/static/audio_recaptcha/.gitkeep
-!app/static/chromedriver/.gitkeep
-!app/static/pdf/.gitkeep
+!app/static/download/.gitkeep
 !app/static/verification_request_files/.gitkeep
 
 ### Flask ###

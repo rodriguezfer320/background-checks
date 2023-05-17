@@ -1,17 +1,17 @@
-from .background import Background
-from .solve_captcha import SolveCaptcha
-from os import getcwd, remove
+from . import Background, SolveCaptcha
+from os import remove
 import PyPDF2
 
 class DisciplinaryBackground(Background):
-    
+
     def __init__(self, driver=None):
         super().__init__(driver)
+        self.path_pdf = driver.dir_download + 'Certificado.pdf'
 
     def search_for_background(self, data):
         # se accede a la url del antecedente
         self.driver.load_browser(data['url'])
-        
+
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
 
@@ -31,11 +31,10 @@ class DisciplinaryBackground(Background):
             .send_keys(data['cedula'])\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='rblTipoCert_0']"))\
             .click()\
-            .perform()           
+            .perform()
 
         # 3. se resuelve el captcha de la página
-        captcha = SolveCaptcha()
-        captcha.driver = self.driver
+        captcha = SolveCaptcha(self.driver)
         captcha.solve_by_question(data['cedula'])
 
         # 3. se da click en el botón generar
@@ -51,42 +50,46 @@ class DisciplinaryBackground(Background):
                 .pause(1)\
                 .perform()
             div_info = self.driver.get_element_by_xpath("//div[@id='ValidationSummary1']")
+
+            # se lanza exception si falla el assert
+            assert div_info.text == 'EL NÚMERO DE IDENTIFICACIÓN INGRESADO NO SE ENCUENTRA REGISTRADO EN EL SISTEMA.'
+
+            # se cierra el navegador
+            self.driver.close_browser()
             
             # se añade la información obtenida a una variable
-            self.text = div_info.text + 'POR LO TANTO, SE CONCLUYE QUE CIUDADANO {} NO REGISTRA SANCIONES NI INHABILIDADES VIGENTES.'.format(data['cedula'])
+            self.text['message'] = 'El ciudadano con Cédula de ciudadanía Número {}. NO REGISTRA SANCIONES NI INHABILIDADES VIGENTES'.format(data['cedula'])
         except:
             # PÁGINA 2 - DESCARGAR CERTIFICADO EN FORMATO PDF
             # se mueve el foco a la ventana que contiene el botón
             actions\
-                .pause(1)\
+                .pause(2)\
                 .perform()
             self.driver.change_frame_by_css_selector("iframe[class='embed-responsive-item'][src^='https://apps.procuraduria.gov.co/webcert/inicio.aspx?']")
-            actions\
-                .pause(1)\
-                .perform()
 
             # se da click en el botón descargar
             actions\
-                .pause(2)\
+                .pause(1)\
                 .move_to_element(self.driver.get_element_by_xpath("//input[@id='btnDescargar']"))\
                 .click()\
                 .pause(5)\
                 .perform()
 
-            # se obtiene el texto del archivo pdf
-            path_pdf = getcwd() + f'\\app\\static\\pdf\\Certificado.pdf'
+            # se cierra el navegador
+            self.driver.close_browser()
 
-            with open(path_pdf, 'rb') as pdf_file:
+            # se obtiene el texto del archivo pdf
+            with open(self.path_pdf, 'rb') as pdf_file:
                 pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-                extract_text = pdf_reader.getPage(0).extractText().strip()
-                message = extract_text[1748:1812] + '\n\n'
-                message += extract_text[0:342]
+                extract_text = pdf_reader.getPage(0).extractText()
+                title = extract_text[extract_text.index('CERTIFICADO ORDINARIO'):extract_text.index('WEB')].strip()
+                date = extract_text[extract_text.index('Bogotá DC'):extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN')].strip()
+                message = extract_text[extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN'):extract_text.index('ADVERTENCIA:')].strip() + '.'
 
             # se elimina el archivo pdf descargado
-            remove(path_pdf)
+            remove(self.path_pdf)
 
             # se añade la información obtenida a una variable
-            self.text = message
-
-        # se cierra el navegador
-        self.driver.close_browser()
+            self.text['title'] = title
+            self.text['date'] = date
+            self.text['message'] = message

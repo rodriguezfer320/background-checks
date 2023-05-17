@@ -1,8 +1,8 @@
-from .background import Background
+from . import Background
 
 class TrafficInfractionBackground(Background):
     
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         super().__init__(driver)
 
     def search_for_background(self, data):
@@ -50,11 +50,12 @@ class TrafficInfractionBackground(Background):
         else:
             message += ' y no tiene comparendos'
 
-        message +=  ' registrado(s) en los Organismos de Tránsito conectados a Simit.'
+        message +=  ' registrado(s) en los Organismos de Tránsito conectados a Simit. '
 
         if fines > 0 or comparendos > 0:
             message += '\nPara más información sobre las multas y/o comparendos que presenta el candidato '
             message += 'consulte el siguiente link: https://www.fcm.org.co/simit/#/estado-cuenta?numDocPlacaProp={}'.format(data['cedula'])
 
         # se añade la información obtenida a una variable
-        self.text = message
+        self.text['title'] = 'Sistema Integrado de información sobre multas y sanciones por infracciones de tránsito'
+        self.text['message'] = message

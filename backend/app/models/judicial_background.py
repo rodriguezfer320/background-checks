@@ -1,9 +1,8 @@
-from .background import Background
-from .solve_recaptcha import SolveRecaptcha
+from . import Background, SolveRecaptcha
 
 class JudicialBackground(Background):
     
-    def __init__(self, driver=None):
+    def __init__(self, driver):
         super().__init__(driver)
 
     def search_for_background(self, data):
@@ -38,8 +37,7 @@ class JudicialBackground(Background):
         select_type_doc.select_by_value('cc')
 
         # 3. se resuelve el recaptcha de la pagina
-        recaptcha = SolveRecaptcha()
-        recaptcha.driver = self.driver
+        recaptcha = SolveRecaptcha(self.driver)
         recaptcha.solve_by_audio()
 
         # 4. se da click en el botón consultar
@@ -54,10 +52,11 @@ class JudicialBackground(Background):
         actions\
             .pause(2)\
             .perform()
-        div_info = self.driver.get_element_by_xpath("//section[@id='antecedentes'] //div[@class='ui-panel ui-widget ui-widget-content ui-corner-all']")
-        
-        # se añade la información obtenida a una variable
-        self.text = div_info.text.strip()[0:806]
+        div_info = self.driver.get_element_by_xpath("//section[@id='antecedentes'] //div[@class='ui-panel ui-widget ui-widget-content ui-corner-all']").text
 
         # se cierra el navegador
         self.driver.close_browser()
+
+        # se añade la información obtenida a una variable
+        self.text['title'] = div_info[div_info.index('La Policía Nacional de Colombia informa:'):div_info.index('Que siendo')].strip()
+        self.text['message'] = div_info[div_info.index('Que siendo'):div_info.index('En cumplimiento de la Sentencia')].strip()

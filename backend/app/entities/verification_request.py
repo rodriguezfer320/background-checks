@@ -1,8 +1,8 @@
-from app.models.database_connection import Base
-from sqlalchemy import Column, Integer, ForeignKey, String, TIMESTAMP, text
+from sqlalchemy import Column, Integer, ForeignKey, String, TIMESTAMP, text, inspect
 from sqlalchemy.orm import relationship
+from ..database import db
 
-class VerificationRequest(Base):
+class VerificationRequestModel(db.Model):
     __tablename__ = 'verification_request'
     id = Column(Integer, autoincrement=True, primary_key=True)
     background_id = Column(Integer, ForeignKey('background.id'))
@@ -12,7 +12,7 @@ class VerificationRequest(Base):
     state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    background = relationship('Background', back_populates='verification_request_background')
+    background = relationship('BackgroundModel', back_populates='candidate_verification_request')
 
     def __init__(self, background_id, title, candidate_id, comment, state):
         self.background_id = background_id
@@ -22,13 +22,4 @@ class VerificationRequest(Base):
         self.state = state
 
     def to_json(self):
-        return {
-            'id': self.id,
-            'background_id': self.background_id,
-            'title': self.title,
-            'candidate_id': self.candidate_id,
-            'comment': self.comment,
-            'state': self.state,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at
-        }
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

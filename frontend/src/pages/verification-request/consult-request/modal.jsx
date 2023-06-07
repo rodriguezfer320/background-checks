@@ -1,6 +1,6 @@
 import React from "react";
-import ViewPDF from "../../../components/pdf/view-pdf.jsx";
 import Select from "react-select";
+import ViewPDF from "./../../../components/pdf/view-pdf.jsx";
 import { ConsultContext } from "./context.js";
 
 export default class Modal extends React.Component {
@@ -19,7 +19,7 @@ export default class Modal extends React.Component {
                         </div>
                         <div className={"modal-body" + (idModal === "modalViewPDF" ? " p-1" : "")}>
                             {(idModal === "modalViewPDF")
-                                ? <ViewPDF fileUrl={data.fileUrl} />
+                                ? <ViewPDF endpoint={data.enpoint} />
                                 : (idModal === "modalEditData")
                                     ? <form autoComplete="off">
                                         <div className="mb-3">
@@ -124,8 +124,8 @@ export default class Modal extends React.Component {
                         <div className="modal-footer">
                             <button id="close-modal" type="button" className="btn btn-primary" data-bs-dismiss="modal" aria-hidden="true">Cerrar</button>
                             {(idModal !== "modalViewPDF")
-                                ? <button class="btn btn-success" type="button" onClick={handleSubmit} disabled={isLoading}>
-                                    {(isLoading) ? <><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;</> : <></>}
+                                ? <button className="btn btn-success" type="button" onClick={handleSubmit} disabled={isLoading}>
+                                    {(isLoading) ? <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;</> : <></>}
                                     Actualizar
                                 </button>
                                 : <></>

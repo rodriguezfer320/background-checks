@@ -1,24 +1,18 @@
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
-from os import getcwd
+from decouple import config
 
 class Driver:
 
     def __init__(self):
-        self.dir_download = getcwd() + '\\app\\static\\download\\'
-        self.options = Options()
+        self.options = webdriver.ChromeOptions()
         self.browser = None
-        path = ''
-
-        try: path = ChromeDriverManager(path=self.dir_download).install()
-        except: path = self.dir_download + '.wdm\\drivers\\chromedriver\\win32\\112.0.5615\\chromedriver.exe'
-        
-        self.service = Service(executable_path=path)
+        self.route = 'http://{host}:{port}'.format(
+            host=config('BROWSER_HOST'),
+            port=config('BROWSER_PORT')
+        )
 
     def load_options(self):
         options = {
@@ -35,15 +29,15 @@ class Driver:
                     'profile.default_content_setting_values.notifications': 2,
                     'intl.accept_languages': ['es-ES', 'es'],
                     'credentials_enable_service': False,
-                    'download.default_directory': self.dir_download, # directorio predeterminado para las descargas
-                    #'download.prompt_for_download': False, # descargar automáticamente el archivo
+                    #'download.default_directory': '/home/seluser/Downloads', # directorio predeterminado para las descargas
+                    'download.prompt_for_download': False, # Para que el navegador no pregunte al descargar
                     #'download.directory_upgrade': True,
-                    #'plugins.always_open_pdf_externally': True # no mostrar el archivo PDF directamente en el navegador
+                    'plugins.always_open_pdf_externally': True, # Para que el navegador no abra el PDF en una pestaña nueva
                 },
                 'useAutomationExtension': False
             },
             'args': [
-                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
+                #'--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
                 '--disable-popup-blocking', # deshabilita las ventanas emergentes que se muestran en el navegador
                 '--incognito', # inicia el navegador en modo incógnito
                 '--profile-directory=Default',
@@ -68,7 +62,7 @@ class Driver:
                 '--disable-gpu',
                 '--enable-webgl',
                 '--ignore-certificate-errors',
-                #'--lang=en-US,en;q=0.9',
+                '--lang=es-ES',
                 '--password-store=basic',
                 '--disable-gpu-sandbox',
                 '--disable-software-rasterizer',
@@ -82,7 +76,8 @@ class Driver:
                 '--disable-gl-drawing-for-tests',
                 '--enable-low-end-device-mode',
                 #'--disable-extensions-except=./plugin',
-                #'--load-extension=./plugin'
+                #'--load-extension=./plugin',
+                '--verbose'
             ]
         }
 
@@ -96,12 +91,14 @@ class Driver:
             self.options.add_argument(arg)
 
     def load_browser(self, url):
-        self.browser = webdriver.Chrome(service=self.service, options=self.options)
+        self.browser = webdriver.Remote(command_executor=self.route, options=self.options)
+        #self.browser.set_page_load_timeout(20)
         self.browser.implicitly_wait(10)
         self.browser.get(url)
-    
+
     def close_browser(self):
-        self.browser.close()
+        self.browser.quit()
+        self.browser = None
 
     def get_action_chains(self):
         return ActionChains(self.browser)

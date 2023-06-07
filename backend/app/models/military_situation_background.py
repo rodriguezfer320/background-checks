@@ -22,7 +22,7 @@ class MilitarySituationBackground(Background):
         actions\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='ctl00_MainContent_txtNumberDocument']"))\
             .click_and_hold()\
-            .send_keys(data['cedula'])\
+            .send_keys(data['document'])\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='ctl00_MainContent_btnGenerate']"))\
             .click()\
             .perform()
@@ -35,7 +35,7 @@ class MilitarySituationBackground(Background):
         display_prop = div_result.value_of_css_property('display')
 
         # redacción del mensaje del antecedente con la información obtiene del sitio web        
-        message = 'El ciudadano identificado con el número de documento {}, '.format(data['cedula'])
+        message = 'El ciudadano identificado con el número de documento {document}, '.format(document=data['document'])
         dataDoc = ''
         
         if display_prop == 'none':
@@ -48,10 +48,10 @@ class MilitarySituationBackground(Background):
         else:
             message += 'TIENE DEFINIDA SU SITUACIÓN MILITAR.'
             dataDoc = 'Datos referentes:\n'
-            dataDoc += '• Nombres y apellidos: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text)
-            dataDoc += '• Tipo de documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text)
-            dataDoc += '• Documento: {}\n'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text)
-            dataDoc += '• Clase de libreta militar: {}'.format(self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text)
+            dataDoc += '• Nombres y apellidos: {name}\n'.format(name=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text)
+            dataDoc += '• Tipo de documento: {type}\n'.format(type=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text)
+            dataDoc += '• Documento: {document}\n'.format(document=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text)
+            dataDoc += '• Clase de libreta militar: {type}'.format(type=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text)
 
         # se añade la información obtenida a una variable
         self.text['title'] = 'FUERZAS MILITARES DE COLOMBIA - COMANDO DE RECLUTAMIENTO Y CONTROL RESERVAS'

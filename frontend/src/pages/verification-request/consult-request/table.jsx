@@ -1,8 +1,8 @@
 import React from "react";
-import { Panel, PanelHeader, PanelBody, PanelFooter } from "../../../components/panel/panel.jsx";
+import { Panel, PanelHeader, PanelBody, PanelFooter } from "./../../../components/panel/panel.jsx";
 import { ConsultContext } from "./context.js";
-import { Roles } from "../../../composables/config.js";
-import { getRole } from "../../../composables/userData.js";
+import { Roles } from "./../../../composables/config.js";
+import { getUserRole } from "./../../../composables/sessionData.js";
 
 export default class Table extends React.Component {
     static contextType = ConsultContext;
@@ -25,7 +25,7 @@ export default class Table extends React.Component {
                                 <thead className="align-middle text-center bg-secondary text-white">
                                     <tr>
                                         <th width="1%">Id</th>
-                                        <th width="3%" hidden={getRole() === Roles.candidate}>Número de identificación</th>
+                                        <th width="3%" hidden={getUserRole() === Roles.candidate}>Número de identificación</th>
                                         <th>Título</th>
                                         <th>Comentario</th>
                                         <th width="2%">Estado</th>
@@ -37,7 +37,7 @@ export default class Table extends React.Component {
                                         ? dataRes.map((item, index) =>
                                             <tr key={"data-verification-request-" + index}>
                                                 <td className="text-center">{item.id}</td>
-                                                <td id={"document-" + item.id} hidden={getRole() === Roles.candidate} className="text-center">{item.candidate_id}</td>
+                                                <td id={"document-" + item.id} hidden={getUserRole() === Roles.candidate} className="text-center">{item.candidate_id}</td>
                                                 <td id={"title-" + item.id}>{item.title}</td>
                                                 <td id={"comment-" + item.id}>{item.comment}</td>
                                                 <td id={"state-" + item.id}>{item.state}</td>
@@ -52,7 +52,7 @@ export default class Table extends React.Component {
                                                     >
                                                         <i className="fas fa-file-pdf fa-xl"></i>
                                                     </button>
-                                                    {(getRole() === Roles.candidate)
+                                                    {(getUserRole() === Roles.candidate)
                                                         ? <button
                                                             type="button"
                                                             id="modalEditData"
@@ -65,7 +65,7 @@ export default class Table extends React.Component {
                                                         </button>
                                                         : <></>
                                                     }
-                                                    {(getRole() !== Roles.candidate)
+                                                    {(getUserRole() !== Roles.candidate)
                                                         ? <button
                                                             type="button"
                                                             id="modalEditState"
@@ -78,7 +78,7 @@ export default class Table extends React.Component {
                                                         </button>
                                                         : <></>
                                                     }
-                                                    {(getRole() === Roles.candidate && item.state === "rechazada")
+                                                    {(getUserRole() === Roles.candidate && item.state === "rechazada")
                                                         ? <button
                                                             type="button"
                                                             id="modalEditDoc"

@@ -1,7 +1,7 @@
 export const Roles = {
-    "company": "empresa",
-    "candidate": "candidato",
-    "officer": "admin"
+    company: "company",
+    candidate: "student",
+    officer: "officer"
 };
 
-export const ApiBaseRoute = "http://127.0.0.1:5000";
+export const ApiBaseRoute = "http://localhost:5000/fs-uv/api";

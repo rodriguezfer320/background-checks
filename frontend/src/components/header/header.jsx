@@ -4,7 +4,6 @@ import DropdownProfile from "./dropdown/profile.jsx";
 import { AppSettings } from "./../../config/app-settings.js";
 
 class Header extends React.Component {
-
 	render() {
 		return (
 			<AppSettings.Consumer>
@@ -19,8 +18,9 @@ class Header extends React.Component {
 								</button>
 							)}
 
-							<Link to="#/" className="navbar-brand">
-								<span className="navbar-logo"></span><b>FINISIHNG SCHOOLS</b>|Verificación de Antecedentes
+							<Link to="/" className="navbar-brand" onClick={(e) => e.preventDefault()}>
+								<img src={process.env.PUBLIC_URL + "/logoUV.png"} alt="Logo Univalle" />
+								<b>FINISHING SCHOOLS</b>|Verificación de Antecedentes
 							</Link>
 
 							{appHeaderMegaMenu && (

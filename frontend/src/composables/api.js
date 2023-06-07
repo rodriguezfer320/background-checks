@@ -9,7 +9,6 @@ api.interceptors.request.use(config => {
     if (config.data !== null && !(config.data instanceof FormData)) {
         Object.assign(config.headers, { "Content-Type": "application/json" });
     }
-    console.log(config)
     return config;
 });
 

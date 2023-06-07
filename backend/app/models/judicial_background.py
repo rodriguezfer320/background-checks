@@ -29,7 +29,7 @@ class JudicialBackground(Background):
             .pause(2)\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='cedulaInput']"))\
             .click_and_hold()\
-            .send_keys(data['cedula'])\
+            .send_keys(data['document'])\
             .perform()
 
         # 2. se selecciona el tipo de documento
@@ -37,7 +37,7 @@ class JudicialBackground(Background):
         select_type_doc.select_by_value('cc')
 
         # 3. se resuelve el recaptcha de la pagina
-        recaptcha = SolveRecaptcha(self.driver)
+        recaptcha = SolveRecaptcha(self.driver, self.dir_download)
         recaptcha.solve_by_audio()
 
         # 4. se da click en el botón consultar

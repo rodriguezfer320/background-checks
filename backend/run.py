@@ -1,8 +1,8 @@
-from app.app import Application
+from app.app import create_app
 
 if __name__ == '__main__':
     # create the app
-    _app = Application()
+    app = create_app()
 
     # initialize the app
-    _app.app.run()
+    app.run(host='0.0.0.0', port='5000')

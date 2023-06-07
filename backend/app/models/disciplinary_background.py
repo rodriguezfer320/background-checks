@@ -6,12 +6,12 @@ class DisciplinaryBackground(Background):
 
     def __init__(self, driver=None):
         super().__init__(driver)
-        self.path_pdf = driver.dir_download + 'Certificado.pdf'
+        self.path_pdf = self.dir_download + 'Certificado.pdf'
 
     def search_for_background(self, data):
         # se accede a la url del antecedente
         self.driver.load_browser(data['url'])
-
+        
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
 
@@ -28,14 +28,14 @@ class DisciplinaryBackground(Background):
         actions\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtNumID']"))\
             .click_and_hold()\
-            .send_keys(data['cedula'])\
+            .send_keys(data['document'])\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='rblTipoCert_0']"))\
             .click()\
             .perform()
 
         # 3. se resuelve el captcha de la página
         captcha = SolveCaptcha(self.driver)
-        captcha.solve_by_question(data['cedula'])
+        captcha.solve_by_question(data['document'])
 
         # 3. se da click en el botón generar
         actions\
@@ -61,12 +61,6 @@ class DisciplinaryBackground(Background):
             self.text['message'] = 'El ciudadano con Cédula de ciudadanía Número {}. NO REGISTRA SANCIONES NI INHABILIDADES VIGENTES'.format(data['cedula'])
         except:
             # PÁGINA 2 - DESCARGAR CERTIFICADO EN FORMATO PDF
-            # se mueve el foco a la ventana que contiene el botón
-            actions\
-                .pause(2)\
-                .perform()
-            self.driver.change_frame_by_css_selector("iframe[class='embed-responsive-item'][src^='https://apps.procuraduria.gov.co/webcert/inicio.aspx?']")
-
             # se da click en el botón descargar
             actions\
                 .pause(1)\

@@ -1,12 +1,13 @@
 import React from "react";
 import Select from "react-select";
 import Swal from "sweetalert2";
-import { Panel, PanelHeader, PanelBody, PanelFooter } from "../../components/panel/panel.jsx";
-import { fetchData } from "../../composables/api.js";
+import { Panel, PanelHeader, PanelBody, PanelFooter } from "./../../components/panel/panel.jsx";
+import { fetchData } from "./../../composables/api.js";
 import {
     titleFieldValidator, documentFieldValidator,
     antecedentFieldValidator, documentFileFieldValidator
-} from "../../composables/validators.js";
+} from "./../../composables/validators.js";
+import { getUserDocument } from "./../../composables/sessionData.js";
 
 export default class CreateRequest extends React.Component {
 
@@ -18,7 +19,9 @@ export default class CreateRequest extends React.Component {
                 isLoading: false
             },
             form: {
-                data: {},
+                data: {
+                    "document": getUserDocument()
+                },
                 error: {},
                 isLoading: false
             }
@@ -36,32 +39,35 @@ export default class CreateRequest extends React.Component {
             return state;
         });
 
-        setTimeout(() => {
-            fetchData({
-                endpoint: "/api/antecedentes?type=no web",
-                signal: this.abortController.signal,
-                method: "GET"
-            }).then((res) => {
-                this.setState(state => {
-                    state.select.data = res.data;
-                    return state;
-                });
-            }).catch((err) => {
+        fetchData({
+            endpoint: "/antecedentes?type=no web",
+            signal: this.abortController.signal,
+            method: "GET"
+        }).then((res) => {
+            this.setState(state => {
+                state.select.data = res.data;
+                state.select.isLoading = false;
+                return state;
+            });
+        }).catch((err) => {
+            this.setState(state => {
+                state.select.isLoading = false;
+                return state;
+            });
+
+            if (err.code === "ERR_CANCELED") {
+                console.log("Se cancelo la petición a la api.");
+            } else {
+                console.error(err);
                 Swal.fire({
                     title: "Fallo",
-                    text: "Ocurrio un error inesperado: " + err.message,
+                    text: "No se pudieron cargar los antecedentes en el select",
                     icon: "error",
                     confirmButtonText: "OK",
                     confirmButtonColor: "#2d353c"
                 });
-                console.error(err);
-            }).finally(
-                this.setState(state => {
-                    state.select.isLoading = false;
-                    return state;
-                })
-            );
-        }, 500);
+            }
+        });
     }
 
     componentWillUnmount() {
@@ -104,50 +110,51 @@ export default class CreateRequest extends React.Component {
                 return state;
             });
 
-            setTimeout(() => {
-                fetchData({
-                    endpoint: "/api/verificacion-solicitud/crear",
-                    signal: this.abortController.signal,
-                    method: "POST",
-                    data: dataTemp
-                }).then((res) => {
+            fetchData({
+                endpoint: "/verificacion-solicitud/crear",
+                signal: this.abortController.signal,
+                method: "POST",
+                data: dataTemp
+            }).then((res) => {
+                this.setState(state => {
+                    state.form.data = {};
+                    state.form.error = {};
+                    state.form.isLoading = false;
+                    return state;
+                });
+                event.target.reset();
+                Swal.fire({
+                    title: res.status,
+                    text: res.message,
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#2d353c"
+                });
+            }).catch((err) => {
+                this.setState(state => {
+                    state.form.isLoading = false;
+                    return state;
+                });
+
+                if (err.response.status && err.response.status === 422) {
                     this.setState(state => {
-                        state.form.data = {};
-                        state.form.error = {};
+                        state.form.error = err.response.data.errors.form;
                         return state;
                     });
-                    event.target.reset();
+                } else if (err.code === "ERR_CANCELED") {
+                    console.log("Se cancelo la petición a la api.");
+                } else {
+                    const text = (err.response.data.status === "FAILD") ? err.response.data.message : "No pudo crear la solicitud de verificación";
+                    if (err.response.data.status !== "FAILD") { console.error(err); }
                     Swal.fire({
-                        title: res.status,
-                        text: res.message,
-                        icon: "success",
+                        title: "Fallo",
+                        text,
+                        icon: "error",
                         confirmButtonText: "OK",
                         confirmButtonColor: "#2d353c"
-                    })
-                }).catch((err) => {
-                    if (err.response.status === 422) {
-                        this.setState(state => {
-                            state.form.error = err.response.data.errors.form;
-                            return state;
-                        });
-                    } else {
-                        const text = (err.response.data.status === "FAILD") ? err.response.data.message : "Ocurrio un error inesperado: " + err.message;
-                        Swal.fire({
-                            title: "Fallo",
-                            text,
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            confirmButtonColor: "#2d353c"
-                        });
-                        if (err.response.data.status !== "FAILD") { console.error(err); }
-                    }
-                }).finally(
-                    this.setState(state => {
-                        state.form.isLoading = false;
-                        return state;
-                    })
-                );
-            }, 500);
+                    });
+                }
+            });
         }
     }
 
@@ -219,6 +226,7 @@ export default class CreateRequest extends React.Component {
                                             id="document"
                                             name="document"
                                             type="text"
+                                            defaultValue={getUserDocument()}
                                             placeholder="Número de identificación"
                                             className={"form-control" + (form.error.document !== undefined ? (form.error.document !== null ? " is-invalid" : " is-valid") : "")}
                                             onChange={this.handleChange}
@@ -271,8 +279,8 @@ export default class CreateRequest extends React.Component {
                             </PanelBody>
                             <PanelFooter>
                                 <div className="row justify-content-end px-2">
-                                    <button class="btn btn-success w-100px me-5px" type="submit" disabled={form.isLoading}>
-                                        {(form.isLoading) ? <><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;</> : <></>}
+                                    <button className="btn btn-success w-100px me-5px" type="submit" disabled={form.isLoading}>
+                                        {(form.isLoading) ? <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;</> : <></>}
                                         Registrar
                                     </button>
                                 </div>

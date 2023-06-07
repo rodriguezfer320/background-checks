@@ -16,8 +16,8 @@ class SidebarMinifyBtn extends React.Component {
 					</div>
 				)}
 			</AppSettings.Consumer>
-		)
+		);
 	}
-}
+};
 
 export default SidebarMinifyBtn;

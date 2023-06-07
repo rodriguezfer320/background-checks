@@ -1,5 +1,5 @@
 import React from "react";
-import { AppSettings } from "../../config/app-settings.js";
+import { AppSettings } from "./../../config/app-settings.js";
 
 class PageNotFound extends React.Component {
 	static contextType = AppSettings;

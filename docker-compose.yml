@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  fsu-bc-postgresql:
+    image: postgres:15.3-alpine
+    container_name: fsu-bc-postgresql
+    environment:
+      - DATABASE_HOST=127.0.0.1
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+    ports:
+      - 5432:5432
+    volumes:
+      - ./database/init:/docker-entrypoint-initdb.d
+  fsu-bc-chrome:
+    image: selenium/standalone-chrome:113.0
+    container_name: fsu-bc-chrome
+    shm_size: 2gb
+    ports:
+      - 4444:4444
+      - 7900:7900
+    volumes:
+      - ./backend/app/static/download:/home/seluser/Downloads
+  fsu-bc-backend:
+    build: ./backend
+    container_name: fsu-bc-backend
+    ports:
+      - 5000:5000
+    volumes: 
+      - ./backend/app:/home/fsu-bc-backend/app
+      - ./backend/.env:/home/fsu-bc-backend/.env
+      - ./backend/run.py:/home/fsu-bc-backend/run.py
+    depends_on:
+      - fsu-bc-postgresql
+      - fsu-bc-chrome
+  fsu-bc-frontend:
+    build: ./frontend
+    container_name: fsu-bc-frontend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - PUBLIC_URL=http://localhost:3000/fs-uv
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/public:/home/fsu-bc-frontend/public
+      - ./frontend/src:/home/fsu-bc-frontend/src
+      - ./frontend/package.json:/home/fsu-bc-frontend/package.json
+    depends_on:
+      - fsu-bc-backend
+  fsu-bc-pgadmin:
+    image: dpage/pgadmin4
+    container_name: fsu-bc-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@root.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    ports:
+      - 80:80
+    depends_on:
+      - fsu-bc-postgresql

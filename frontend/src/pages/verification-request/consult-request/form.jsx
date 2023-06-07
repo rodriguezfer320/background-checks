@@ -1,9 +1,9 @@
 import React from "react";
-import { Panel, PanelHeader, PanelBody } from "../../../components/panel/panel.jsx";
 import Select from "react-select";
+import { Panel, PanelHeader, PanelBody } from "./../../../components/panel/panel.jsx";
 import { ConsultContext } from "./context.js";
-import { Roles } from "../../../composables/config.js";
-import { getRole } from "../../../composables/userData.js";
+import { Roles } from "./../../../composables/config.js";
+import { getUserRole } from "./../../../composables/sessionData.js";
 
 export default class Table extends React.Component {
     static contextType = ConsultContext;
@@ -44,7 +44,7 @@ export default class Table extends React.Component {
                                         id="search"
                                         name="search"
                                         className={"form-control" + (consult.error.search !== undefined ? (consult.error.search !== null ? " is-invalid" : " is-valid") : "")}
-                                        placeholder={"Id solicitud" + (getRole() !== Roles.candidate ? ", Número de identificación" : "")}
+                                        placeholder={"Id solicitud" + (getUserRole() !== Roles.candidate ? ", Número de identificación" : "")}
                                         onChange={(e) => handleChange(e, undefined, "consult")}
                                         onBlur={(e) => handleBlur(e, "consult")}
                                     />

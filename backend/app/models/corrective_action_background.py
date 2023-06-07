@@ -26,10 +26,10 @@ class CorrectiveActionBackground(Background):
         actions\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='ctl00_ContentPlaceHolder3_txtExpediente']"))\
             .click_and_hold()\
-            .send_keys(data['cedula'])\
+            .send_keys(data['document'])\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtFechaexp']"))\
             .click_and_hold()\
-            .send_keys(data['fecha-expedicion'])\
+            .send_keys(data['date-expedition'])\
             .move_to_element(self.driver.get_element_by_xpath("//a[@id='ctl00_ContentPlaceHolder3_btnConsultar2']"))\
             .click()\
             .perform()

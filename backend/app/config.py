@@ -3,6 +3,7 @@ from decouple import config
 class Config:
     SECRET_KEY = config('APP_SECRET_KEY')
     TIMEZONE = config('APP_TIMEZONE')
+    PROPAGATE_EXCEPTIONS = False
 
     # API
     API_TITLE = 'My API'

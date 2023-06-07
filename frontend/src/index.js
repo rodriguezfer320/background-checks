@@ -13,11 +13,10 @@ import './index.css';
 import './scss/react.scss';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-//function App() { return <AppRoute /> }
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="fs-uv">
       <AppRoute />
     </BrowserRouter>
   </React.StrictMode>

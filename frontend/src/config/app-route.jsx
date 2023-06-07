@@ -1,16 +1,16 @@
 import React from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
-import App from "../app.jsx";
-import Login from "../pages/login/login.jsx";
-import ConsultBackground from "../pages/background-checks/consult-background.jsx";
-import CreateRequest from "../pages/verification-request/create-request.jsx";
-import ConsultRequest from "../pages/verification-request/consult-request/consult.jsx";
-import PageNotFound from "../pages/errors/page-not-found.jsx";
-import { getUser, validateRole } from "../composables/userData.js";
-import { Roles } from "../composables/config.js";
+import App from "./../app.jsx";
+import Login from "./../pages/login/login.jsx";
+import ConsultBackground from "./../pages/background-checks/consult-background.jsx";
+import CreateRequest from "./../pages/verification-request/create-request.jsx";
+import ConsultRequest from "./../pages/verification-request/consult-request/consult.jsx";
+import PageNotFound from "./../pages/errors/page-not-found.jsx";
+import { getAccessToken, validateRole } from "./../composables/sessionData.js";
+import { Roles } from "./../composables/config.js";
 
 function Authenticated() {
-	return getUser() ? <Outlet /> : <Navigate to="/login" />;
+	return getAccessToken() ? <Outlet /> : <Navigate to="/login" />;
 }
 
 function RoleProtected({ allowedRoles }) {

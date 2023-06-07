@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-//import PerfectScrollbar from "react-perfect-scrollbar";
 import { AppSettings } from "./../../config/app-settings.js";
 import { slideUp } from "./../../composables/slideUp.js";
 import { slideToggle } from "./../../composables/slideToggle.js";
@@ -309,14 +308,12 @@ class Sidebar extends React.Component {
 	render() {
 		return (
 			<AppSettings.Consumer>
-				{({ toggleAppSidebarMinify, toggleAppSidebarMobile, appSidebarTransparent, appSidebarGrid }) => (
+				{({ toggleAppSidebarMobile, appSidebarTransparent, appSidebarGrid }) => (
 					<React.Fragment>
 						<div id="sidebar" className={"app-sidebar" + (appSidebarTransparent ? " app-sidebar-transparent" : "") + (appSidebarGrid ? " app-sidebar-grid" : "")}>
-							{/*<PerfectScrollbar className="app-sidebar-content" options={{suppressScrollX: true}}>*/}
 							{!this.context.appSidebarSearch && (<SidebarProfile />)}
 							<SidebarNav />
 							<SidebarMinifyBtn />
-							{/*</div></PerfectScrollbar>*/}
 						</div>
 						<div className="app-sidebar-bg"></div>
 						<div className="app-sidebar-mobile-backdrop"><Link to="/" onClick={toggleAppSidebarMobile} className="stretched-link"></Link></div>

@@ -1,0 +1,6 @@
+__pycache__/
+app/static/
+.env.copy
+.dockerignore
+.gitignore
+Dockerfile

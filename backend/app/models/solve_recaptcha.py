@@ -4,9 +4,9 @@ import speech_recognition as sr, soundfile as sf
 
 class SolveRecaptcha:
 
-    def __init__(self, driver):
+    def __init__(self, driver, dir_download):
         self._driver = driver
-        self._path_audio = driver.dir_download + 'audio-recaptcha.{}'
+        self._path_audio = dir_download + 'audio-recaptcha.{extension}'
 
     def solve_by_audio(self, default=True): 
         # se da click en el checkbox y verifica si el desafio ha sido superado
@@ -63,7 +63,7 @@ class SolveRecaptcha:
                     .perform()
 
         # se mueve el foco al body
-        self.driver.change_frame_by_css_selector("body")
+        self.driver.change_frame_by_css_selector("body", True)
 
     def solve_check_box(self, default, click):
         # se mueve el foco a la ventana del checkbox
@@ -83,17 +83,17 @@ class SolveRecaptcha:
 
     def download_audio_test_recapcha(self, src):
         # se descarga el archivo de audio
-        urlretrieve(src, self._path_audio.format('mp3'))
+        urlretrieve(src, self._path_audio.format(extension='mp3'))
 
         # se lee el archivo de audio 
-        data, sample_rate = sf.read(self._path_audio.format('mp3'))
+        data, sample_rate = sf.read(self._path_audio.format(extension='mp3'))
 
         # se convierte al archivo de audio de .mp3 a .wav
-        sf.write(self._path_audio.format('wav'), data, sample_rate)
+        sf.write(self._path_audio.format(extension='wav'), data, sample_rate)
 
     def speech_to_text(self):
         # se carga el archivo de audio
-        sample_audio = sr.AudioFile(self._path_audio.format('wav'))
+        sample_audio = sr.AudioFile(self._path_audio.format(extension='wav'))
 
         # se inicia el reconocedor de audio
         recognizer = sr.Recognizer()

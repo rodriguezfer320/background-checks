@@ -1,11 +1,10 @@
 import React, { Component } from "react";
 import Select from "react-select";
 import Swal from "sweetalert2";
-import { Panel, PanelHeader, PanelBody } from "../../components/panel/panel.jsx";
-import ViewPDF from "../../components/pdf/view-pdf.jsx";
-import { fetchData } from "../../composables/api.js";
-import { documentFieldValidator, antecedentsFieldValidator } from "../../composables/validators.js";
-import { ApiBaseRoute } from "../../composables/config.js";
+import { Panel, PanelHeader, PanelBody } from "./../../components/panel/panel.jsx";
+import ViewPDF from "./../../components/pdf/view-pdf.jsx";
+import { fetchData } from "./../../composables/api.js";
+import { documentFieldValidator, antecedentsFieldValidator } from "./../../composables/validators.js";
 
 export default class ConsultBackground extends Component {
 
@@ -43,33 +42,35 @@ export default class ConsultBackground extends Component {
             return state;
         });
 
-        setTimeout(() => {
-            fetchData({
-                endpoint: "/api/antecedentes",
-                signal: this.abortController.signal,
-                method: "GET"
-            }).then((res) => {
-                this.setState((state) => {
-                    state.select.data = res.data;
-                    return state;
-                });
-            }).catch((err) => {
+        fetchData({
+            endpoint: "/antecedentes",
+            signal: this.abortController.signal,
+            method: "GET"
+        }).then((res) => {
+            this.setState((state) => {
+                state.select.data = res.data;
+                state.select.isLoading = false;
+                return state;
+            });
+        }).catch((err) => {
+            this.setState(state => {
+                state.select.isLoading = false;
+                return state;
+            });
+
+            if (err.code === "ERR_CANCELED") {
+                console.log("Se cancelo la petición a la api.");
+            } else {
+                console.error(err);
                 Swal.fire({
                     title: "Fallo",
-                    text: "Ocurrio un error inesperado: " + err.message,
+                    text: "No se pudieron cargar los antecedentes en el select",
                     icon: "error",
                     confirmButtonText: "OK",
                     confirmButtonColor: "#2d353c"
                 });
-                console.error(err);
-            }).finally(
-                this.setState(state => {
-                    state.select.isLoading = false;
-                    return state;
-                })
-            );
-        }, 500);
-
+            }
+        });
     }
 
     componentWillUnmount() {
@@ -102,43 +103,44 @@ export default class ConsultBackground extends Component {
                 return state;
             });
 
-            setTimeout(() => {
-                fetchData({
-                    endpoint: "/api/verificacion-antecedentes",
-                    signal: this.abortController.signal,
-                    method: "GET",
-                    params: new URLSearchParams(`${
-                        (document ? ("?document=" + document) : "") +
-                        (antecedents ? ((document ? "&" : "?") + "antecedents=" + antecedents.toString().replaceAll(",", "&antecedents=")) : "")
-                    }`)
-                }).then((res) => {
+            fetchData({
+                endpoint: "/verificacion-antecedentes",
+                signal: this.abortController.signal,
+                method: "GET",
+                params: new URLSearchParams(`${
+                    (document ? ("?document=" + document) : "") +
+                    (antecedents ? ((document ? "&" : "?") + "antecedents=" + antecedents.toString().replaceAll(",", "&antecedents=")) : "")
+                }`)
+            }).then((res) => {
+                this.setState((state) => {
+                    state.consult.data = res.data;
+                    state.consult.isLoading = false;
+                    return state;
+                });
+            }).catch((err) => {
+                this.setState((state) => {
+                    state.consult.isLoading = false;
+                    return state;
+                });
+
+                if (err.response.status && err.response.status === 422) {
                     this.setState((state) => {
-                        state.consult.data = res.data;
+                        state.form.error = err.response.data.errors.query;
                         return state;
                     });
-                }).catch((err) => {
-                    if (err.response.status === 422) {
-                        this.setState((state) => {
-                            state.form.error = err.response.data.errors.query;
-                            return state;
-                        });
-                    } else {
-                        Swal.fire({
-                            title: "Fallo",
-                            text: "Ocurrio un error inesperado: " + err.message,
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            confirmButtonColor: "#2d353c"
-                        });
-                        console.error(err);
-                    }
-                }).finally(
-                    this.setState(state => {
-                        state.consult.isLoading = false;
-                        return state;
-                    })
-                );
-            }, 500);
+                } else if (err.code === "ERR_CANCELED") {
+                    console.log("Se cancelo la petición a la api.");
+                } else {
+                    console.error(err);
+                    Swal.fire({
+                        title: "Fallo",
+                        text: "No se pudo obtener la información de los antecedentes",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        confirmButtonColor: "#2d353c"
+                    });
+                }
+            });
         }
     }
 
@@ -258,7 +260,7 @@ export default class ConsultBackground extends Component {
                                 {(consult.data.length)
                                     ? <div className="card border-1">
                                         <div className="card-header">
-                                            <ul className="nav nav-pills card-header-pills mb-2" role="tablist">
+                                            <ul className="nav nav-pills mb-2" role="tablist">
                                                 {consult.data.map((elem, index) =>
                                                     <li key={"#nav-antecents-tab-" + index} className="nav-item" role="presentation">
                                                         <a href={"#nav-antecents-tab-" + index}
@@ -267,6 +269,7 @@ export default class ConsultBackground extends Component {
                                                             tabIndex={(index === 0 ? "" : "-1")}
                                                             role="tab"
                                                         >
+                                                            <span className="d-sm-none">{elem.name}</span>
                                                             <span className="d-sm-block d-none">{elem.name}</span>
                                                         </a>
                                                     </li>
@@ -285,7 +288,7 @@ export default class ConsultBackground extends Component {
                                                         {(elem.information.title) ? <h6>{elem.information.title}</h6> : <></>}
                                                         {(elem.information.date) ? <><div>{elem.information.date}</div><br /></> : <></>}
                                                         <p style={{ textAlign: "justify" }}>{elem.information.message}</p>
-                                                        {(elem.information.data) ? <div><pre>{elem.information.data}</pre></div> : <></>}
+                                                        {(elem.information.data) ? <p style={{ whiteSpace: "pre-wrap" }}>{elem.information.data}</p> : <></>}
                                                         {(elem.type === "no web" && elem.information.link)
                                                             ? <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                                                                 <button
@@ -319,7 +322,7 @@ export default class ConsultBackground extends Component {
                                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-hidden="true"></button>
                                     </div>
                                     <div className="modal-body p-1">
-                                        <ViewPDF fileUrl={ApiBaseRoute + modal.link} />
+                                        <ViewPDF endpoint={modal.link} />
                                     </div>
                                     <div className="modal-footer">
                                         <button id="close-modal" type="button" className="btn btn-primary" data-bs-dismiss="modal" aria-hidden="true">Cerrar</button>

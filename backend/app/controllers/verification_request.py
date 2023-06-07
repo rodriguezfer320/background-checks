@@ -15,7 +15,7 @@ class VerificationRequestController(views.MethodView):
 
     def __init__(self):
         super().__init__()
-        self.dir_file = getcwd() + '\\app\\static\\verification_request_files\\{filename}.pdf'
+        self.dir_file = getcwd() + r'/app/static/verification_request_files/{filename}.pdf'
         self.states = ('todos', 'pendiente', 'rechazada', 'corregida', 'aprobada')
 
     @vg.arguments(VerificationRequestArgsSchema, location='query')

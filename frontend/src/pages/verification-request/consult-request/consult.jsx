@@ -3,13 +3,13 @@ import Swal from "sweetalert2";
 import Form from "./form.jsx";
 import Table from "./table.jsx";
 import Modal from "./modal.jsx";
-import { fetchData } from "../../../composables/api.js";
+import { fetchData } from "./../../../composables/api.js";
 import {
     searchFieldValidator, titleFieldValidator, documentFieldValidator,
     stateFieldValidator, commentFieldValidator, documentFileFieldValidator
-} from "../../../composables/validators.js";
-import { getRole, getDocument } from "../../../composables/userData.js";
-import { Roles, ApiBaseRoute } from "../../../composables/config.js";
+} from "./../../../composables/validators.js";
+import { getUserRole, getUserDocument } from "./../../../composables/sessionData.js";
+import { Roles } from "./../../../composables/config.js";
 import { ConsultContext } from "./context.js";
 
 export default class Consult extends React.Component {
@@ -83,40 +83,42 @@ export default class Consult extends React.Component {
                 return state;
             });
 
-            setTimeout(() => {
-                fetchData({
-                    endpoint: "/api/verificacion-solicitud",
-                    signal: this.abortController.signal,
-                    method: "GET",
-                    params: new URLSearchParams({
-                        page,
-                        document: getRole() === Roles.candidate ? getDocument() : "",
-                        state: this.state.consult.data.state,
-                        search: this.state.consult.data.search ?? ""
-                    })
-                }).then((res) => {
-                    this.setState(state => {
-                        state.consult.dataRes = res.data;
-                        state.consult.pagination = res.pagination;
-                        return state;
-                    });
-                }).catch((err) => {
+            fetchData({
+                endpoint: "/verificacion-solicitud",
+                signal: this.abortController.signal,
+                method: "GET",
+                params: new URLSearchParams({
+                    page,
+                    document: getUserRole() === Roles.candidate ? getUserDocument() : "",
+                    state: this.state.consult.data.state,
+                    search: this.state.consult.data.search ?? ""
+                })
+            }).then((res) => {
+                this.setState(state => {
+                    state.consult.dataRes = res.data;
+                    state.consult.pagination = res.pagination;
+                    state.consult.isLoading = false;
+                    return state;
+                });
+            }).catch((err) => {
+                this.setState(state => {
+                    state.consult.isLoading = false;
+                    return state;
+                });
+
+                if (err.code === "ERR_CANCELED") {
+                    console.log("Se cancelo la petición a la api.");
+                } else {
+                    console.error(err);
                     Swal.fire({
                         title: "Fallo",
-                        text: "Ocurrio un error inesperado: " + err.message,
+                        text: "No pudieron obtener las solicitudes de verificación",
                         icon: "error",
                         confirmButtonText: "OK",
                         confirmButtonColor: "#2d353c"
                     });
-                    console.error(err);
-                }).finally(
-                    this.setState(state => {
-                        state.consult.isLoading = false;
-                        return state;
-                    })
-                );
-            }, 500);
-
+                }
+            });
         }
     }
 
@@ -150,48 +152,49 @@ export default class Consult extends React.Component {
             return state;
         });
 
-        setTimeout(() => {
-            fetchData({
-                endpoint: `/api/verificacion-solicitud/editar-${urlName}/${idRequest}`,
-                signal: this.abortController.signal,
-                method: "PUT",
-                data
-            }).then((res) => {
+        fetchData({
+            endpoint: `/verificacion-solicitud/editar-${urlName}/${idRequest}`,
+            signal: this.abortController.signal,
+            method: "PUT",
+            data
+        }).then((res) => {
+            this.setState(state => {
+                state.modal.status = res.status;
+                state.modal.isLoading = false;
+                return state;
+            });
+            Swal.fire({
+                title: res.status,
+                text: res.message,
+                icon: "success",
+                confirmButtonText: "OK",
+                confirmButtonColor: "#2d353c"
+            });
+            document.getElementById("close-modal").click();
+        }).catch((err) => {
+            this.setState(state => {
+                state.modal.isLoading = false;
+                return state;
+            });
+
+            if (err.response.status && err.response.status === 422) {
                 this.setState(state => {
-                    state.modal.status = res.status;
+                    state.modal.error = (idModal === "modalEditDoc") ? err.response.data.errors.files : err.response.data.errors.json;
                     return state;
                 });
+            } else if (err.code === "ERR_CANCELED") {
+                console.log("Se cancelo la petición a la api.");
+            } else {
+                console.error(err);
                 Swal.fire({
-                    title: res.status,
-                    text: res.message,
-                    icon: "success",
+                    title: "Fallo",
+                    text: "No se pudieron actualizar los datos enviados",
+                    icon: "error",
                     confirmButtonText: "OK",
                     confirmButtonColor: "#2d353c"
-                })
-                document.getElementById("close-modal").click();
-            }).catch((err) => {
-                if (err.response.status === 422) {
-                    this.setState(state => {
-                        state.modal.error = (idModal === "modalEditDoc") ? err.response.data.errors.files : err.response.data.errors.json;
-                        return state;
-                    });
-                } else {
-                    Swal.fire({
-                        title: "Fallo",
-                        text: "Ocurrio un error inesperado: " + err.message,
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        confirmButtonColor: "#2d353c"
-                    });
-                    console.error(err);
-                }
-            }).finally(
-                this.setState(state => {
-                    state.modal.isLoading = false;
-                    return state;
-                })
-            );
-        }, 500);
+                });
+            }
+        });
     }
 
     handleChange(event, actionMeta, tag) {
@@ -222,7 +225,7 @@ export default class Consult extends React.Component {
             if (idModal === "modalViewPDF") {
                 state.modal.title = `Documento de la solicitud #${data[0]}`;
                 state.modal.data = {
-                    fileUrl: `${ApiBaseRoute}/api/verificacion-solicitud/file/${data[0]}`
+                    enpoint: `/verificacion-solicitud/file/${data[0]}`
                 };
             } else if (idModal === "modalEditData") {
                 state.modal.title = `Editar datos de la solicitud #${data[0]}`;

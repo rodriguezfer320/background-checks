@@ -1,7 +1,7 @@
 import React from "react";
+import { getProfilePicture, getUserName, getUserRole } from "./../../composables/sessionData.js";
 
 class SidebarProfile extends React.Component {
-
 	render() {
 		return (
 			<div className="menu">
@@ -9,20 +9,18 @@ class SidebarProfile extends React.Component {
 					<div className="menu-profile-link">
 						<div className="menu-profile-cover with-shadow"></div>
 						<div className="menu-profile-image">
-							<img src="../assets/img/user/user-13.jpg" alt="" />
+							<img src={getProfilePicture()} alt="avatar del usuario" />
 						</div>
 						<div className="menu-profile-info">
 							<div className="d-flex align-items-center">
-								<div className="flex-grow-1">
-									Sean Ngu
-								</div>
+								<div className="flex-grow-1">{getUserName()}</div>
 							</div>
-							<small>Front end developer</small>
+							<small>{getUserRole()}</small>
 						</div>
 					</div>
 				</div>
 			</div>
-		)
+		);
 	}
 }
 

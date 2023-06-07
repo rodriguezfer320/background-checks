@@ -19,9 +19,13 @@ class TrafficInfractionBackground(Background):
             .pause(10)\
             .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtBusqueda']"))\
             .click_and_hold()\
-            .send_keys(data['cedula'])\
+            .send_keys(data['document'])\
             .move_to_element(self.driver.get_element_by_xpath("//button[@id='consultar']"))\
             .click()\
+            .perform()
+
+        actions\
+            .pause(2)\
             .perform()
 
         # se obtiene la información consultada en la página
@@ -37,16 +41,16 @@ class TrafficInfractionBackground(Background):
         fines = int(info[2].split(' ')[1])
 
         # redacción del mensaje del antecedente con la información obtiene del sitio web        
-        message = 'El ciudadano identificado con el número de documento {}, '.format(data['cedula'])
+        message = 'El ciudadano identificado con el número de documento {document}, '.format(document=data['document'])
         
         if fines > 0:
-            message += 'posee {} multa(s) a la fecha pendientes de pago'.format(fines)
+            message += 'posee {quantity} multa(s) a la fecha pendientes de pago'.format(quantity=fines)
         else:
             message += 'no posee a la fecha pendientes de pago por concepto de multas'
         
         if comparendos > 0:
             message += ' y' if fines > 0 else ', pero'
-            message += ' tiene {} comparendo(s)'.format(comparendos)
+            message += ' tiene {quantity} comparendo(s)'.format(quantity=comparendos)
         else:
             message += ' y no tiene comparendos'
 
@@ -54,7 +58,7 @@ class TrafficInfractionBackground(Background):
 
         if fines > 0 or comparendos > 0:
             message += '\nPara más información sobre las multas y/o comparendos que presenta el candidato '
-            message += 'consulte el siguiente link: https://www.fcm.org.co/simit/#/estado-cuenta?numDocPlacaProp={}'.format(data['cedula'])
+            message += 'consulte el siguiente link: https://www.fcm.org.co/simit/#/estado-cuenta?numDocPlacaProp={document}'.format(document=data['document'])
 
         # se añade la información obtenida a una variable
         self.text['title'] = 'Sistema Integrado de información sobre multas y sanciones por infracciones de tránsito'

@@ -1,23 +1,23 @@
-from flask import Flask
+from flask import Flask, json, jsonify
 from flask_smorest import Api
 from flask_cors import CORS
 from .config import config
 from .database import db
 from .routes import api
 
-class Application:
+def create_app():
+    # app
+    app = Flask(__name__)
 
-    def __init__(self):
-        # app
-        self.app = Flask(__name__, static_folder="/app/static")
+    # configuración
+    app.config.from_object(config['development'])
 
-        # configuración
-        self.app.config.from_object(config['development'])
+    # extensiones
+    CORS(app, resources=r'/fs-uv/api/*', origins=['http://localhost:3000'], methods=['GET', 'POST', 'PUT', 'DELETE'])
+    Api(app)
+    db.init_app(app)
 
-        # extensiones
-        CORS(self.app, resources=r'/api/*', origins=['http://localhost:3000', 'http://192.168.0.23:3000'], methods=['GET', 'POST', 'PUT', 'DELETE'])
-        Api(self.app)
-        db.init_app(self.app)
-
-        # rutas de la api
-        self.app.register_blueprint(api)
+    # se registran las rutas de la api
+    app.register_blueprint(api)
+    
+    return app

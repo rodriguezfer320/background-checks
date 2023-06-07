@@ -1,7 +1,7 @@
 import React from "react";
 import { useResolvedPath, useMatch, NavLink, useLocation, matchPath } from "react-router-dom";
 import menus from "./../../config/app-menu.jsx";
-import { validateRole } from "../../composables/userData.js";
+import { validateRole } from "./../../composables/sessionData.js";
 
 function NavItem({ pathParent, menu, ...props }: LinkProps) {
 	const menuPath = (pathParent ?? "") + menu.path;
@@ -9,7 +9,7 @@ function NavItem({ pathParent, menu, ...props }: LinkProps) {
 	const match = useMatch({ path: resolved.pathname });
 
 	const location = useLocation();
-	const match2 = matchPath({ path: menuPath, end: false, }, location.pathname);
+	const match2 = matchPath({ path: menuPath, end: false }, location.pathname);
 
 	const icon = menu.icon && <div className="menu-icon"><i className={menu.icon}></i></div>;
 	const img = menu.img && <div className="menu-icon-img"><img src={menu.img} alt="" /></div>;
@@ -32,7 +32,7 @@ function NavItem({ pathParent, menu, ...props }: LinkProps) {
 			)}
 		</div>
 	);
-}
+};
 
 class SidebarNav extends React.Component {
 
@@ -58,6 +58,6 @@ class SidebarNav extends React.Component {
 			</div>
 		);
 	}
-}
+};
 
 export default SidebarNav;

@@ -1,0 +1,24 @@
+@import "https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700";
+@import "https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.1/nv.d3.min.css";
+@import "https://unpkg.com/ionicons@4.2.2/dist/css/ionicons.min.css";
+
+svg, .fa, .fas, .far {
+    pointer-events: none;
+}
+
+.page_header {
+    text-align: center;
+}
+
+.page_header h1 {
+    text-transform: uppercase;
+}
+
+.hr_title {
+    border: 0;
+    height: 2px;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    width: 50%;
+}

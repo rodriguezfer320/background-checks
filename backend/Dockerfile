@@ -1,6 +1,6 @@
 FROM python:3.10.0-slim
 
-WORKDIR /home/fsu-bc-backend
+WORKDIR /home/fsuv-bc-backend
 
 COPY app ./app
 COPY ./.env .

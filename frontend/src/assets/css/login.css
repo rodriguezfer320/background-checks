@@ -1,0 +1,68 @@
+.bg-style {
+    position: absolute;
+    max-height: 100%;
+    min-width: 100%;
+    top: -1960px;
+    bottom: -1960px;
+    left: -1960px;
+    right: -1960px;
+    margin: auto;
+} 
+
+.login.login-v1 .login-container .login-body .login-content .form-control:focus {
+  box-shadow: 0 0 0 0.25rem rgb(52 143 226 / 25%) !important;
+}
+
+.custom-google-btn {
+    background-color: #ffffff;
+    color: rgba(0, 0, 0, 0.54);
+    border: 1px solid rgba(0, 0, 0, 0.54);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, border 0.3s ease;
+  }
+  
+  .custom-google-btn:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.87);
+    border: 1px solid rgba(0, 0, 0, 0.87);
+  }
+
+
+  .login-portal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .login-portal-buttons button {
+    height: 2.8rem;
+    width: 100%;
+  }
+
+
+  .react-google-login-button {
+    background-color: #db4a39;
+    color: white;
+    border-radius: 4px;
+    padding: 8px 16px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .react-google-login-button:hover {
+    background-color: #c53727;
+  }
+
+.modal.show .modal-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 100% !important;
+}

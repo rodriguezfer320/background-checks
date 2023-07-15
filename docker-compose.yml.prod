@@ -1,0 +1,51 @@
+version: "3.8"
+services:
+  fsuv-bc-backend:
+    image: background-checks-backend:v1.0
+    container_name: fsuv-bc-backend
+    ports:
+      - 8001:5000
+    volumes:
+      - ./backend/app/static:/home/fsuv-bc-backend/app/static
+    depends_on:
+      - fsuv-bc-db
+      - fsuv-bc-selenium
+  fsuv-bc-frontend:
+    image: background-checks-frontend:v1.0
+    container_name: fsuv-bc-frontend
+    environment:
+      - PUBLIC_URL=http://localhost:8002/fs-uv/bc
+    ports:
+      - 8002:3000
+    depends_on:
+      - fsuv-bc-backend
+  fsuv-bc-db:
+    image: postgres:15.3-alpine
+    container_name: fsuv-bc-db
+    environment:
+      - TZ=America/Bogota
+      - DATABASE_HOST=127.0.0.1
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root#FSUV.bc
+    ports:
+      - 8003:5432
+    volumes:
+      - ./database:/docker-entrypoint-initdb.d
+  fsuv-bc-selenium:
+    image: selenium/standalone-chrome:114.0
+    container_name: fsuv-bc-selenium
+    ports:
+      - 8004:4444
+      - 8005:7900
+    volumes:
+      - ./backend/app/static/download:/home/seluser/Downloads
+  fsuv-bc-pgadmin:
+    image: dpage/pgadmin4
+    container_name: fsuv-bc-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@root.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    ports:
+      - 8006:80
+    depends_on:
+      - fsuv-bc-db

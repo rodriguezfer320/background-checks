@@ -8,6 +8,8 @@ from ..entities import VerificationRequestModel
 from ..schemas import (VerificationRequestArgsSchema, VerificationRequestPostSchema, VerificationRequestPutDataSchema,
                        VerificationRequestPutStateSchema, VerificationRequestFileSchema)
 from ..database import db
+from ..auth import authentication_required_and_permissions
+from ..utils import ROLES
 
 vg = Blueprint('verification_request', __name__)
 
@@ -18,14 +20,15 @@ class VerificationRequestController(views.MethodView):
         self.dir_file = getcwd() + r'/app/static/verification_request_files/{filename}.pdf'
         self.states = ('todos', 'pendiente', 'rechazada', 'corregida', 'aprobada')
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate'], ROLES['officer']])
     @vg.arguments(VerificationRequestArgsSchema, location='query')
     def get(self, args):
         # se forma la query de la consulta
         query = VerificationRequestModel.query
 
         # se aplica el filtro por documento
-        if args['document']:
-            query = query.filter(VerificationRequestModel.candidate_id == args['document'])
+        if args['user_sub_key']:
+            query = query.filter(VerificationRequestModel.user_sub_key == args['user_sub_key'])
 
             # se aplica el filtro de busqueda por id
             if args['search']:
@@ -38,8 +41,7 @@ class VerificationRequestController(views.MethodView):
 
         # se aplica el filtro por estado
         if args['state'] != self.states[0]:
-            print(args['state'])
-            query = query.filter(VerificationRequestModel.state == args['state'])        
+            query = query.filter(VerificationRequestModel.state == args['state'])            
 
         verification_requests = db.paginate(query.order_by(VerificationRequestModel.id), page=args['page'], per_page=10, error_out=False)
 
@@ -58,12 +60,13 @@ class VerificationRequestController(views.MethodView):
             }
         }), 200
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate'], ROLES['company'], ROLES['officer']])
     def get_file(self, id):
-        verification_request = VerificationRequestModel.query.get(id)
+        verification_request = db.session.get(VerificationRequestModel, id)
 
         if verification_request:
             try:
-                filename = str(verification_request.background_id) + '_' + str(verification_request.candidate_id) + '_' + verification_request.background.name
+                filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
                 return send_file(self.dir_file.format(filename=filename))
             except FileNotFoundError:
                 return jsonify({
@@ -78,16 +81,18 @@ class VerificationRequestController(views.MethodView):
                 'message': 'No se encontró una solicitud de verificación.'
             }), 404
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
     @vg.arguments(VerificationRequestPostSchema, location='form')
     def create(self, form):
         # se consulta si ya se ha registrado la solicitud para ese antecedente
         verification_request = VerificationRequestModel.query\
+                                                       .filter(VerificationRequestModel.user_sub_key == form['user_sub_key'])\
                                                        .filter(VerificationRequestModel.background_id == form['antecedent'])\
-                                                       .filter(VerificationRequestModel.candidate_id == form['document'])\
                                                        .first()
         if verification_request is None:
             # se crea la instancia de la solicitud
             verification_request = VerificationRequestModel(
+                user_sub_key=form['user_sub_key'],
                 background_id=form['antecedent'],
                 title=form['title'].strip(),
                 candidate_id=form['document'].strip(),
@@ -100,7 +105,7 @@ class VerificationRequestController(views.MethodView):
             db.session.commit()
 
             # se guarda el archivo en una ubicación del servidor
-            filename = str(verification_request.background_id) + '_' + str(verification_request.candidate_id) + '_' + verification_request.background.name
+            filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
             form['file_document'].save(self.dir_file.format(filename=filename))
 
             return jsonify({
@@ -115,11 +120,11 @@ class VerificationRequestController(views.MethodView):
                 'message': 'Solo se puede crear una solicitud por tipo de antecedente.'
             }), 400
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
     @vg.arguments(VerificationRequestPutDataSchema, location='json')
     def update_data(self, data, id):
         # se consulta una solicitud especifica creada por un candidato
-        verification_request = VerificationRequestModel.query.get(id)
-
+        verification_request = db.session.get(VerificationRequestModel, id)
         if verification_request:
             # se asiganan los nuevos datos
             verification_request.title = data['title'].strip()
@@ -141,10 +146,11 @@ class VerificationRequestController(views.MethodView):
                 'message': 'No se encontró una solicitud de verificación.'
             }), 404
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['officer']])
     @vg.arguments(VerificationRequestPutStateSchema, location='json')
-    def update_state(dself, data, id):
+    def update_state(self, data, id):
         # se consulta una solicitud especifica creada por un candidato
-        verification_request = VerificationRequestModel.query.get(id)
+        verification_request = db.session.get(VerificationRequestModel, id)
 
         if verification_request:
             # se asiganan los nuevos datos
@@ -167,10 +173,11 @@ class VerificationRequestController(views.MethodView):
                 'message': 'No se encontró una solicitud de verificación.'
             }), 404
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
     @vg.arguments(VerificationRequestFileSchema, location='files')
     def update_document(self, files, id):
         # se consulta una solicitud especifica creada por un candidato
-        verification_request = VerificationRequestModel.query.get(id)
+        verification_request = db.session.get(VerificationRequestModel, id)
 
         if verification_request:
             if verification_request.state == self.states[2]:
@@ -180,7 +187,7 @@ class VerificationRequestController(views.MethodView):
                 db.session.commit()
 
                 # se guarda el archivo en una ubicación del servidor
-                filename = str(verification_request.background_id) + '_' + str(verification_request.candidate_id) + '_' + verification_request.background.name
+                filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
                 files['file_document'].save(self.dir_file.format(filename=filename))
 
                 return jsonify({

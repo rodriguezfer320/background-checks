@@ -2,6 +2,8 @@
 .dockerignore
 .gitignore
 Dockerfile
+Dockerfile.dev
+Dockerfile.prod
 package-lock.json
 
 # dependencies

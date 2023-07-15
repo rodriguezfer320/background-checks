@@ -23,7 +23,7 @@ vg.add_url_rule(rule='/editar-estado/<int:id>', view_func=controllerVG.update_st
 vg.add_url_rule(rule='/editar-documento/<int:id>', view_func=controllerVG.update_document, methods=['PUT'])
 
 # se registran las rutas en la api
-api = Blueprint('api', __name__, url_prefix='/fs-uv/api/')
+api = Blueprint('api', __name__, url_prefix='/fs-uv/bc/api/')
 api.register_blueprint(bc, url_prefix='verificacion-antecedentes')
 api.register_blueprint(bg, url_prefix='antecedentes')
 api.register_blueprint(vg, url_prefix='verificacion-solicitud')

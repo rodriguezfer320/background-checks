@@ -20,7 +20,7 @@ function NavItem({ pathParent, menu, ...props }: LinkProps) {
 	const title = menu.title && <div className="menu-text">{menu.title} {label} {highlight}</div>;
 
 	return (
-		<div className={"menu-item" + ((match || match2) ? " active" : "") + (menu.children ? " has-sub" : "")}>
+		<div className={"menu-item" + ((match || match2) ? " active" : "") + (menu.children ? " has-sub" : "")}>			
 			<NavLink className="menu-link" to={menuPath} {...props}>
 				{img} {icon} {title}{caret} {badge}
 			</NavLink>
@@ -29,7 +29,7 @@ function NavItem({ pathParent, menu, ...props }: LinkProps) {
 				<div className="menu-submenu">
 					{menu.children.map((submenu, i) => <NavItem key={i} pathParent={menu.path} menu={submenu} />)}
 				</div>
-			)}
+			)}			
 		</div>
 	);
 };

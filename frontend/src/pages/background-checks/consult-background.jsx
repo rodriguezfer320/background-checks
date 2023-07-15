@@ -1,10 +1,10 @@
 import React, { Component } from "react";
 import Select from "react-select";
-import Swal from "sweetalert2";
 import { Panel, PanelHeader, PanelBody } from "./../../components/panel/panel.jsx";
 import ViewPDF from "./../../components/pdf/view-pdf.jsx";
-import { fetchData } from "./../../composables/api.js";
+import { fetchData } from "./../../composables/backgroundCheckApi.js";
 import { documentFieldValidator, antecedentsFieldValidator } from "./../../composables/validators.js";
+import { messageError } from "./../../composables/alert.js";
 
 export default class ConsultBackground extends Component {
 
@@ -34,6 +34,7 @@ export default class ConsultBackground extends Component {
         this.handleChange = this.handleChange.bind(this);
         this.handleBlur = this.handleBlur.bind(this);
         this.showModal = this.showModal.bind(this);
+        this.hideModal = this.hideModal.bind(this);
     }
 
     componentDidMount() {
@@ -46,9 +47,9 @@ export default class ConsultBackground extends Component {
             endpoint: "/antecedentes",
             signal: this.abortController.signal,
             method: "GET"
-        }).then((res) => {
+        }).then((resp) => {
             this.setState((state) => {
-                state.select.data = res.data;
+                state.select.data = resp.data;
                 state.select.isLoading = false;
                 return state;
             });
@@ -57,20 +58,12 @@ export default class ConsultBackground extends Component {
                 state.select.isLoading = false;
                 return state;
             });
-
-            if (err.code === "ERR_CANCELED") {
-                console.log("Se cancelo la petición a la api.");
-            } else {
-                console.error(err);
-                Swal.fire({
-                    title: "Fallo",
-                    text: "No se pudieron cargar los antecedentes en el select",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#2d353c"
-                });
-            }
+            messageError(err, "No se pudieron cargar los antecedentes en el select");
         });
+
+        document
+            .querySelector("#modalViewPDF")
+            .addEventListener("hidden.bs.modal", this.hideModal);
     }
 
     componentWillUnmount() {
@@ -111,9 +104,9 @@ export default class ConsultBackground extends Component {
                     (document ? ("?document=" + document) : "") +
                     (antecedents ? ((document ? "&" : "?") + "antecedents=" + antecedents.toString().replaceAll(",", "&antecedents=")) : "")
                 }`)
-            }).then((res) => {
+            }).then((resp) => {
                 this.setState((state) => {
-                    state.consult.data = res.data;
+                    state.consult.data = resp.data;
                     state.consult.isLoading = false;
                     return state;
                 });
@@ -123,22 +116,15 @@ export default class ConsultBackground extends Component {
                     return state;
                 });
 
-                if (err.response.status && err.response.status === 422) {
+                if (err.status === 422) {
                     this.setState((state) => {
-                        state.form.error = err.response.data.errors.query;
+                        state.form.error = err.data.errors.query;
                         return state;
                     });
-                } else if (err.code === "ERR_CANCELED") {
-                    console.log("Se cancelo la petición a la api.");
                 } else {
-                    console.error(err);
-                    Swal.fire({
-                        title: "Fallo",
-                        text: "No se pudo obtener la información de los antecedentes",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        confirmButtonColor: "#2d353c"
-                    });
+                    const message = (err.status === 404) ? err.data.message : "No se pudo obtener la información de los antecedentes";
+                    const title = (err.status === 404) ? err.data.status : "Fallo";
+                    messageError(err, message, title);
                 }
             });
         }
@@ -176,6 +162,14 @@ export default class ConsultBackground extends Component {
         this.setState(state => {
             state.modal.title = title;
             state.modal.link = link;
+            return state;
+        });
+    }
+
+    hideModal(event) {
+        this.setState(state => {
+            state.modal.title = "";
+            state.modal.link = "";
             return state;
         });
     }
@@ -254,6 +248,7 @@ export default class ConsultBackground extends Component {
                                     ? <div className="row justify-content-center">
                                         <div className="spinner-border text-primary m-5" style={{ "width": "15rem", "height": "15rem" }} role="status" aria-hidden="true"></div>
                                         <span className="visually-hidden">Consultando los antecedentes...</span>
+                                        <p className="text-center" style={{ whiteSpace: "pre-wrap", fontSize: "15px" }}>Este proceso puede tardar unos minutos ...</p>
                                     </div>
                                     : <></>
                                 }
@@ -313,25 +308,22 @@ export default class ConsultBackground extends Component {
                             </PanelBody>
                         </Panel>
                     </div>
-                    {(consult.data.length && consult.data.find((elem) => elem.type === "no web"))
-                        ? <div id="modalViewPDF" className="modal fade">
-                            <div className="modal-dialog">
-                                <div className="modal-content">
-                                    <div className="modal-header bg-dark">
-                                        <h4 className="modal-title text-white">{modal.title}</h4>
-                                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-hidden="true"></button>
-                                    </div>
-                                    <div className="modal-body p-1">
-                                        <ViewPDF endpoint={modal.link} />
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button id="close-modal" type="button" className="btn btn-primary" data-bs-dismiss="modal" aria-hidden="true">Cerrar</button>
-                                    </div>
+                   <div id="modalViewPDF" className="modal fade">
+                        <div className="modal-dialog">
+                            <div className="modal-content">
+                                <div className="modal-header bg-dark">
+                                    <h4 className="modal-title text-white">{modal.title}</h4>
+                                    <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-hidden="true"></button>
+                                </div>
+                                <div className="modal-body p-1">
+                                    {(modal.link) ? <ViewPDF endpoint={modal.link} /> : <></>}
+                                </div>
+                                <div className="modal-footer">
+                                    <button id="close-modal" type="button" className="btn btn-primary" data-bs-dismiss="modal" aria-hidden="true">Cerrar</button>
                                 </div>
                             </div>
                         </div>
-                        : <></>
-                    }
+                    </div>
                 </div>
             </>
         );

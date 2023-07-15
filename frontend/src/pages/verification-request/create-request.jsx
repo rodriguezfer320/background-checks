@@ -1,13 +1,13 @@
 import React from "react";
 import Select from "react-select";
-import Swal from "sweetalert2";
 import { Panel, PanelHeader, PanelBody, PanelFooter } from "./../../components/panel/panel.jsx";
-import { fetchData } from "./../../composables/api.js";
+import { fetchData } from "./../../composables/backgroundCheckApi.js";
 import {
     titleFieldValidator, documentFieldValidator,
     antecedentFieldValidator, documentFileFieldValidator
 } from "./../../composables/validators.js";
-import { getUserDocument } from "./../../composables/sessionData.js";
+import { getUserSubKey } from "./../../composables/sessionData.js";
+import { messageError, messageSuccess } from "./../../composables/alert.js";
 
 export default class CreateRequest extends React.Component {
 
@@ -20,7 +20,7 @@ export default class CreateRequest extends React.Component {
             },
             form: {
                 data: {
-                    "document": getUserDocument()
+                    user_sub_key: getUserSubKey()
                 },
                 error: {},
                 isLoading: false
@@ -43,9 +43,9 @@ export default class CreateRequest extends React.Component {
             endpoint: "/antecedentes?type=no web",
             signal: this.abortController.signal,
             method: "GET"
-        }).then((res) => {
+        }).then((resp) => {
             this.setState(state => {
-                state.select.data = res.data;
+                state.select.data = resp.data;
                 state.select.isLoading = false;
                 return state;
             });
@@ -55,18 +55,7 @@ export default class CreateRequest extends React.Component {
                 return state;
             });
 
-            if (err.code === "ERR_CANCELED") {
-                console.log("Se cancelo la petición a la api.");
-            } else {
-                console.error(err);
-                Swal.fire({
-                    title: "Fallo",
-                    text: "No se pudieron cargar los antecedentes en el select",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#2d353c"
-                });
-            }
+            messageError(err, "No se pudieron cargar los antecedentes en el select");
         });
     }
 
@@ -97,10 +86,6 @@ export default class CreateRequest extends React.Component {
         } else if (!errors.some((v) => v !== null)) {
             const dataTemp = new FormData();
 
-            if (data["file_document"]) {
-                dataTemp.append("file_document_copy", data["file_document"]);
-            }
-
             Object.keys(data).forEach((key) => {
                 dataTemp.append(key, data[key]);
             });
@@ -115,44 +100,31 @@ export default class CreateRequest extends React.Component {
                 signal: this.abortController.signal,
                 method: "POST",
                 data: dataTemp
-            }).then((res) => {
+            }).then((resp) => {
                 this.setState(state => {
-                    state.form.data = {};
+                    state.form.data = {
+                        user_sub_key: state.form.data.user_sub_key
+                    };
                     state.form.error = {};
                     state.form.isLoading = false;
                     return state;
                 });
                 event.target.reset();
-                Swal.fire({
-                    title: res.status,
-                    text: res.message,
-                    icon: "success",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#2d353c"
-                });
+                messageSuccess(resp.data.status, resp.data.message);
             }).catch((err) => {
                 this.setState(state => {
                     state.form.isLoading = false;
                     return state;
                 });
 
-                if (err.response.status && err.response.status === 422) {
+                if (err.status === 422) {
                     this.setState(state => {
-                        state.form.error = err.response.data.errors.form;
+                        state.form.error = err.data.errors.form;
                         return state;
                     });
-                } else if (err.code === "ERR_CANCELED") {
-                    console.log("Se cancelo la petición a la api.");
                 } else {
-                    const text = (err.response.data.status === "FAILD") ? err.response.data.message : "No pudo crear la solicitud de verificación";
-                    if (err.response.data.status !== "FAILD") { console.error(err); }
-                    Swal.fire({
-                        title: "Fallo",
-                        text,
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        confirmButtonColor: "#2d353c"
-                    });
+                    const message = (err.data && err.data.status === "FAILD") ? err.data.message : "No se pudo crear la solicitud de verificación";
+                    messageError(err, message);
                 }
             });
         }
@@ -226,7 +198,6 @@ export default class CreateRequest extends React.Component {
                                             id="document"
                                             name="document"
                                             type="text"
-                                            defaultValue={getUserDocument()}
                                             placeholder="Número de identificación"
                                             className={"form-control" + (form.error.document !== undefined ? (form.error.document !== null ? " is-invalid" : " is-valid") : "")}
                                             onChange={this.handleChange}

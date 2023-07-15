@@ -9,7 +9,7 @@ class Driver:
     def __init__(self):
         self.options = webdriver.ChromeOptions()
         self.browser = None
-        self.route = 'http://{host}:{port}'.format(
+        self.route = 'http://{host}:{port}/wd/hub'.format(
             host=config('BROWSER_HOST'),
             port=config('BROWSER_PORT')
         )
@@ -97,7 +97,9 @@ class Driver:
         self.browser.get(url)
 
     def close_browser(self):
-        self.browser.quit()
+        if self.browser:
+            self.browser.quit()
+        
         self.browser = None
 
     def get_action_chains(self):

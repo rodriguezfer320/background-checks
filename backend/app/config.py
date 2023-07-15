@@ -11,6 +11,7 @@ class Config:
     OPENAPI_VERSION = '3.0.2'
 
     # DATABASE
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{database}'.format(
         user=config('PGSQL_USER'),
         password=config('PGSQL_PASSWORD'),
@@ -18,7 +19,6 @@ class Config:
         port=config('PGSQL_PORT'),
         database=config('PGSQL_DATABASE')
     )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -29,6 +29,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    DEBUG = True
 
 config = {
     'production': ProductionConfig,

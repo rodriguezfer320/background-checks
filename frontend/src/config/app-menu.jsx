@@ -1,6 +1,9 @@
-import { Roles } from "./../composables/config.js";
+import { Roles, BaseUrlFrontLogin } from "./../composables/config.js";
 
 const Menu = [
+  {
+    path: BaseUrlFrontLogin + "/dashboard/services", icon: "fas fa-layer-group", title: "Servicios",
+  },
   {
     path: "/verificacion-antecedentes/", icon: "fas fa-magnifying-glass", title: "Verificación de antecedentes", allowedRoles: [Roles.company],
     children: [

@@ -1,8 +1,8 @@
-from werkzeug.datastructures import ImmutableMultiDict
+from werkzeug.datastructures import ImmutableMultiDict, FileStorage
 from flask import request
 from flask_smorest.fields import Upload
 from marshmallow import Schema, ValidationError, fields, validate, validates, pre_load, post_load
-import re
+import re, os
 
 class VerificationRequestArgsSchema(Schema):
     page = fields.Integer(
@@ -12,28 +12,23 @@ class VerificationRequestArgsSchema(Schema):
             'invalid': 'Debe ingresar un número entero.'
         }
     )
-    document = fields.String(
+    user_sub_key = fields.String(
         required = False,
         missing = None
     )
     search = fields.String(
         required = False, 
-        missing = 'todos'
+        missing = None
     )
     state = fields.String(
         required = False, 
-        missing = None
+        missing = 'todos'
     )
 
     @validates('page')
     def validate_page(self, page):
         if page <= 0:
             raise ValidationError('Debe ingresar una pagina mayor a cero.')
-    
-    @validates('document')
-    def validate_file_document(self, document):
-        if document and not re.search('^[0-9]{8,10}$', document):
-            raise ValidationError('Ingrese un número entre 8 y 10 digitos.')
 
 class VerificationRequestPutDataSchema(Schema):
     title = fields.String(
@@ -76,24 +71,38 @@ class VerificationRequestFileSchema(Schema):
     )
 
     @pre_load
-    def remove_envelope(self, data, many, **kwargs):
+    def load_file_document(self, data, many, **kwargs):
+        file = request.files.get('file_document')
         dataTemp = data.to_dict()
-        dataTemp['file_document'] = request.files.get('file_document')
+        dataTemp['file_document'] = None
+
+        if file:
+            old_file_position = file.tell()
+            file.seek(0, os.SEEK_END)
+            dataTemp['file_document'] = FileStorage(
+                stream=file.stream,
+                filename=file.filename,
+                content_type=file.mimetype,
+                content_length=file.tell()
+            )            
+            file.seek(old_file_position, os.SEEK_SET)
+
         return ImmutableMultiDict((key, dataTemp[key]) for key in dataTemp.keys())
-    
-    @post_load
-    def lowerstrip_email(self, item, many, **kwargs):
-        item['file_document'] = request.files.get('file_document_copy')
-        return item
     
     @validates('file_document')
     def validate_file_document(self, file_document):
         if file_document.mimetype != 'application/pdf':
             raise ValidationError('Debe seleccionar un archivo en formato pdf.')
-        elif (len(file_document.read()) / 1000000) > 10.0:
+        elif (file_document.content_length / 1000000) > 10.0:
             raise ValidationError('Debe seleccionar un archivo que no supere los 10Mb.')
 
 class VerificationRequestPostSchema(VerificationRequestPutDataSchema, VerificationRequestFileSchema):
+    user_sub_key = fields.String(
+        required = True,
+        error_messages = {
+            'required': 'Debe ingresar el sub_key del usuario.',
+        }
+    )
     antecedent = fields.Integer(
         required = True,
         error_messages = {

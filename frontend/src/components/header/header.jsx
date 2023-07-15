@@ -19,7 +19,7 @@ class Header extends React.Component {
 							)}
 
 							<Link to="/" className="navbar-brand" onClick={(e) => e.preventDefault()}>
-								<img src={process.env.PUBLIC_URL + "/logoUV.png"} alt="Logo Univalle" />
+								<img src={process.env.PUBLIC_URL + "/assets/img/logoUV.png"} alt="Logo Univalle" />
 								<b>FINISHING SCHOOLS</b>|Verificación de Antecedentes
 							</Link>
 

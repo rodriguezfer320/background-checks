@@ -1,16 +1,16 @@
 import React from "react";
-import Swal from "sweetalert2";
 import Form from "./form.jsx";
 import Table from "./table.jsx";
 import Modal from "./modal.jsx";
-import { fetchData } from "./../../../composables/api.js";
+import { fetchData } from "./../../../composables/backgroundCheckApi.js";
 import {
     searchFieldValidator, titleFieldValidator, documentFieldValidator,
     stateFieldValidator, commentFieldValidator, documentFileFieldValidator
 } from "./../../../composables/validators.js";
-import { getUserRole, getUserDocument } from "./../../../composables/sessionData.js";
+import { getUserRole, getUserSubKey } from "./../../../composables/sessionData.js";
 import { Roles } from "./../../../composables/config.js";
 import { ConsultContext } from "./context.js";
+import { messageError, messageSuccess } from "./../../../composables/alert.js";
 
 export default class Consult extends React.Component {
 
@@ -32,7 +32,8 @@ export default class Consult extends React.Component {
             },
             consult: {
                 data: {
-                    state: "todos"
+                    state: "todos",
+                    user_sub_key: getUserRole() === Roles.candidate ? getUserSubKey() : ""
                 },
                 error: {},
                 dataRes: [],
@@ -89,14 +90,14 @@ export default class Consult extends React.Component {
                 method: "GET",
                 params: new URLSearchParams({
                     page,
-                    document: getUserRole() === Roles.candidate ? getUserDocument() : "",
+                    user_sub_key: this.state.consult.data.user_sub_key,
                     state: this.state.consult.data.state,
                     search: this.state.consult.data.search ?? ""
                 })
-            }).then((res) => {
+            }).then((resp) => {
                 this.setState(state => {
-                    state.consult.dataRes = res.data;
-                    state.consult.pagination = res.pagination;
+                    state.consult.dataRes = resp.data;
+                    state.consult.pagination = resp.pagination;
                     state.consult.isLoading = false;
                     return state;
                 });
@@ -105,19 +106,7 @@ export default class Consult extends React.Component {
                     state.consult.isLoading = false;
                     return state;
                 });
-
-                if (err.code === "ERR_CANCELED") {
-                    console.log("Se cancelo la petición a la api.");
-                } else {
-                    console.error(err);
-                    Swal.fire({
-                        title: "Fallo",
-                        text: "No pudieron obtener las solicitudes de verificación",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        confirmButtonColor: "#2d353c"
-                    });
-                }
+                messageError(err, "No pudieron obtener las solicitudes de verificación");
             });
         }
     }
@@ -135,11 +124,6 @@ export default class Consult extends React.Component {
             urlName = "documento";
 
             const dataTemp = new FormData();
-
-            if (data["file_document"]) {
-                dataTemp.append("file_document_copy", data["file_document"]);
-            }
-
             Object.keys(data).forEach((key) => {
                 dataTemp.append(key, data[key]);
             });
@@ -157,19 +141,13 @@ export default class Consult extends React.Component {
             signal: this.abortController.signal,
             method: "PUT",
             data
-        }).then((res) => {
+        }).then((resp) => {
             this.setState(state => {
-                state.modal.status = res.status;
+                state.modal.status = resp.data.status;
                 state.modal.isLoading = false;
                 return state;
             });
-            Swal.fire({
-                title: res.status,
-                text: res.message,
-                icon: "success",
-                confirmButtonText: "OK",
-                confirmButtonColor: "#2d353c"
-            });
+            messageSuccess(resp.data.status, resp.data.message);
             document.getElementById("close-modal").click();
         }).catch((err) => {
             this.setState(state => {
@@ -177,23 +155,14 @@ export default class Consult extends React.Component {
                 return state;
             });
 
-            if (err.response.status && err.response.status === 422) {
+            if (err.status === 422) {
                 this.setState(state => {
-                    state.modal.error = (idModal === "modalEditDoc") ? err.response.data.errors.files : err.response.data.errors.json;
+                    state.modal.error = (idModal === "modalEditDoc") ? err.data.errors.files : err.data.errors.json;
                     return state;
                 });
-            } else if (err.code === "ERR_CANCELED") {
-                console.log("Se cancelo la petición a la api.");
             } else {
-                console.error(err);
-                Swal.fire({
-                    title: "Fallo",
-                    text: "No se pudieron actualizar los datos enviados",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#2d353c"
-                });
-            }
+                messageError(err, "No se pudieron actualizar los datos enviados");
+            } 
         });
     }
 

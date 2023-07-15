@@ -2,6 +2,8 @@ from flask import jsonify, views
 from flask_smorest import Blueprint
 from ..entities import BackgroundModel
 from ..schemas import BackgroundArgsSchema
+from ..auth import authentication_required_and_permissions
+from ..utils import ROLES
 
 bg = Blueprint('background', __name__)
 
@@ -10,6 +12,7 @@ class BackgroundController(views.MethodView):
     def __init__(self):
         super().__init__()
 
+    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate'], ROLES['company'], ROLES['officer']])
     @bg.arguments(BackgroundArgsSchema, location='query')
     def get(self, args):
         # se forma el query de la consulta

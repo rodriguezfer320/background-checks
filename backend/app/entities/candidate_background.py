@@ -4,6 +4,9 @@ from ..database import db
 
 class CandidateBackgroundModel(db.Model):
     __tablename__ = 'candidate_background'
+    __mapper_args__ = {
+        'confirm_deleted_rows': False
+    }
     candidate_id = Column(Integer, primary_key=True)
     background_id = Column(Integer, ForeignKey('background.id'), primary_key=True)
     description = Column(String, nullable=False)

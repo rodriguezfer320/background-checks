@@ -1,61 +1,167 @@
 import React from "react";
-import Select from "react-select";
+import { Navigate } from "react-router-dom";
+import { getRefreshToken, redirectUser } from "./../../composables/sessionData.js";
+import { fetchDataAuth } from "./../../composables/authenticationApi.js";
+import { fetchDataProfile } from "./../../composables/profileApi.js";
+import { Roles, BaseUrlFrontLogin } from "./../../composables/config.js";
+import RegisterBg from "./../../assets/img/login/register-bg.png";
+import logoUnivalle from "./../../assets/img/login/logo-univalle.png";
+
+// css
+import "./../../assets/css/login.css";
 
 class Login extends React.Component {
 
 	constructor(props) {
 		super(props);
 		this.state = {
-			options: [
-				{"value": "company", "label": "empresa"},
-				{"value": "student", "label": "candidato"},
-				{"value": "officer", "label": "funcionario"}
-			],
-			redirect: {
-				'company': '/fs-uv/verificacion-antecedentes/consultar-antecedentes',
-				'student': '/fs-uv/verificacion-solicitud/consultar-candidato',
-				'officer': '/fs-uv/verificacion-solicitud/consultar-funcionario'
+			form: {
+				data: {},
+				error: {}
 			},
-			role: "company"
+			redirect: getRefreshToken() ? true : false 
 		};
 		this.handleChange = this.handleChange.bind(this);
-		this.handleClick = this.handleClick.bind(this);
+		this.handleLogin = this.handleLogin.bind(this);
 	}
 
-	handleChange(data) {
+	handleChange(event) {
+		const id = event.target.id;
+		const value = event.target.value;
 		this.setState(state => {
-			state.role = data.value;
+			state.form.data[id] = value;
 			return state;
 		});
 	}
 
-	handleClick(event) {
-		localStorage.setItem('refresh_token', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY4NzIyMzQ5OCwiaWF0IjoxNjg1OTI3NDk4LCJqdGkiOiI0NTc1YzQ2N2RiNzI0MTQ1YWE5ZjY3NmVlMjA0Mjc5MiIsInVzZXJfaWQiOjE4LCJzdWJfa2V5IjoiNjIyOGEzNTAtOTljOS00NWUxLWE2ZDUtOWM4YTBiNmU4YjQxIiwicm9sZSI6InN0dWRlbnQifQ.aoXvtR2i8_x36DyhF81xeEJ5dIDhjQYJMcY1N6L4WEE1HdvzSE7Vm-ZgauyrXpN9oIkiUALyZY4pvXQwZIDi5qyx5-vvRldTIaI-qu4oDiN5Cg7fIXKaHdLjmgx7vj8AtoBFyO0Xbvmk51f-aSNXpKyXm0fsFtkFyEi8ieqeuNCkLOyJRIPK3cyJcS1f1qzYnQ_tSDUQmPCe2lNimdupt4pFPy84-DYdJQSa-Bl-z_cpYKI4Bqla1vypBZCtS2kttabIHKzNcs-DKcSx7WySulYdYaICMrITu_qlEa4VqfELjuC8k5eddx6k_w2hf-IQCou6morVdmtJ54y1L_35XA');
-		localStorage.setItem('access_token', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg1OTI4MTU4LCJpYXQiOjE2ODU5Mjc0OTgsImp0aSI6IjJlOTQxYjkyNTYzZTRhZTI4MzgwMjhjMWI3NjUwZDI2IiwidXNlcl9pZCI6MTgsInN1Yl9rZXkiOiI2MjI4YTM1MC05OWM5LTQ1ZTEtYTZkNS05YzhhMGI2ZThiNDEiLCJyb2xlIjoic3R1ZGVudCJ9.rC1BdFEjmo8vJKzQvwpgjmqdjcvFXdBZfnDZMLHbrltG5S6LOBsRI2YX-0BP18pmEcuYTHXJt1OBLL9wdjFu357_KEDjY5ByAbL2-TTP18fdVcGA0Rt_yRzSCWpoWQUjwWU74mhWZCoFQk7tLU0B5VdS577fc4sjqYXwT8QcvnSZ4y-abdAdlL7ECj-3YQRPqAtRFcaZ6SXB0E9_rXfc7XZnKCEHUluve2bqTL8q2KifBlm1w77t9eSMQjY0-GLybR95RpohaLkF9MDxmcV-H_Ia8unaZZdlk6xlQdKtmbGDi8X8CrG76gwS78nRLORd310dW2MIive6GnQOOa7hFw');
-		localStorage.setItem('user', 'miguel.fernandez@correounivalle.edu.co');
-		localStorage.setItem('user_document', '1118310093');
-		localStorage.setItem('user_name', 'Anonimo xj');
-		localStorage.setItem('profile_picture', '');
-		localStorage.setItem('role', this.state.role);
-		window.location = this.state.redirect[this.state.role];
+	async handleLogin(event) {
+		event.preventDefault();
+		const refreshToken = this.state.form.data["refresh_token"];
+
+		this.setState(state => {
+			state.form.error = {};
+			return state;
+		});
+		
+		try {
+			const responseDecodeToken = await fetchDataAuth({ 
+				endpoint: "/user/decode_jwt/",
+				method: "POST",
+				data: {
+					"auth-token": refreshToken
+				}
+			});
+
+			const responseToken = await fetchDataAuth({ 
+				endpoint: "api/refresh/",
+				method: "POST",
+				data: {
+					"refresh": refreshToken
+				}
+			});
+			
+			if (responseDecodeToken.status === 200 && responseToken.status === 200) {
+				const userRole = responseDecodeToken.data.role;
+				localStorage.setItem("access_token", responseToken.data.access);
+				localStorage.setItem("refresh_token", refreshToken);
+				localStorage.setItem("role", userRole);
+				localStorage.setItem("user_sub_key", responseDecodeToken.data.sub_key);
+				
+				const responseUserInfo = await fetchDataAuth({ 
+					endpoint: "/user/get_user_basic_info/",
+					method: "GET",
+					auth: true
+				});
+
+				if (responseUserInfo.status === 200) {					
+					localStorage.setItem("user_name", responseUserInfo.data.user_name);
+					localStorage.setItem("user_last_name", responseUserInfo.data.user_last_name);				
+				} else {
+					console.log("Error al obtener los datos del usuario. Estado: " + responseUserInfo.status);
+				}
+
+				if (userRole === Roles.candidate || userRole === Roles.company) {
+					const responseProfilePicture = await fetchDataProfile({
+						method: "GET",
+						userRole
+					});
+	
+					if (responseProfilePicture.status === 200) {
+						localStorage.setItem("profile_picture", "https://res.cloudinary.com/dlhcdji3v/" + responseProfilePicture.data.profile_picture);
+					} else {
+						console.log("Error al obtener la foto de perfil del usuario. Estado: " + responseProfilePicture.status);
+					}
+				}
+
+				this.setState(state => {
+					state.redirect = true;
+					return state;
+				});
+			} else {
+				let message = ""
+
+				if(responseDecodeToken.status === 200) {
+					message = (responseDecodeToken.data) ? responseToken.data.detail : "Error: " + responseToken.status;
+				} else {
+					message = (responseDecodeToken.data) ? responseDecodeToken.data : "Error: " + responseDecodeToken.status;
+				}
+
+				this.setState(state => {
+					state.form.error["refresh_token"] = message;
+					return state;
+				});
+			}
+		} catch (err) {
+			console.log("Error login");
+			console.log(err);
+		}
 	}
 
 	render() {
+		if (this.state.redirect) {
+			return <Navigate to={redirectUser()} replace />;
+		}
+
 		return (
-			<>
-				<h1>Login</h1>
-				<Select
-					inputId="role"
-					name="role"
-					defaultValue={this.state.options[0]}
-					className="basic-single"
-					classNamePrefix="select"
-					placeholder="Seleccione un rol"
-					options={this.state.options}
-					onChange={this.handleChange}
-				/>
-				<button onClick={this.handleClick}>Ingresar</button>
-			</>
+			<div className="login login-with-news-feed">
+				<div className="news-feed">
+					<div className='news-image'> 
+						<img src={RegisterBg} alt="register-bg" className='bg-style'/>
+					</div>
+					<div className="news-caption">
+						<h4 className="caption-title"><b>Finishing Schools</b> Univalle</h4>
+						<p>
+							Servicio de verificación de antecedentes
+						</p>
+					</div>
+				</div>
+				<div className="login-container">
+					<div className="register-header mb-25px h1">
+						<div className='col-lg-12 col-md-12 col-sm-12 col-xs-9'>
+							<img className='logo' src={logoUnivalle} style={{"width":"80%","marginBottom": '12px'}} alt="bg-register"/>
+						</div>
+					</div>
+					<div className="text-gray pb-4">
+						<b>¡Bienvenido!</b> Inicia sesión <a href={BaseUrlFrontLogin} target="_blank" rel="noreferrer">aqui</a> 
+						&nbsp; y recupera la sesión copiando el refresh token del local storage
+					</div>
+					<div className="login-content">
+						<form onSubmit={this.handleLogin} className="fs-13px" autoComplete="off">
+							<div className="form-floating">
+								<input type="text" className="form-control h-45px fs-13px" 
+								placeholder="Refresh token" id="refresh_token" onChange={this.handleChange}/>
+								<label htmlFor="refresh_token" className="d-flex align-items-center fs-13px text-gray-600">Refresh token</label>
+							</div>
+							<div className="invalid-feedback" style={{"display": "flex"}}>
+								{this.state.form.error.refresh_token ?? ""}
+							</div>			
+                            <div className="mb-4 mt-4">
+                                <button type="submit" className="btn btn-primary d-block w-100 btn-lg h-45px fs-13px">Ingresar</button>
+                            </div>
+						</form>
+					</div>
+				</div>
+			</div>
 		);
 	}
 };

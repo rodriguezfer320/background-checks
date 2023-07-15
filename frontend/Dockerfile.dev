@@ -1,0 +1,12 @@
+FROM node:18-alpine
+
+WORKDIR /home/fsuv-bc-frontend
+
+COPY . .
+
+#RUN npm cache clean install
+RUN npm install
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

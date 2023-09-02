@@ -143,7 +143,7 @@ export default class Consult extends React.Component {
             data
         }).then((resp) => {
             this.setState(state => {
-                state.modal.status = resp.data.status;
+                state.modal.status = "SUCCESS";
                 state.modal.isLoading = false;
                 return state;
             });

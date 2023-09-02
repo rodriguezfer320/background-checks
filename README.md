@@ -13,13 +13,13 @@ Para iniciar este microservicio, se deben ejecutar los siguientes pasos:
 2. Crear la imagen docker del frontend ejecutando el comando:
     
     * Esteblecer el entorno (desarrollo o producción):
-        copiar el contenido del archivo .dev o .prod al Dockerfile
+       copiar el contenido del archivo .dev o .prod al Dockerfile
     * Para crear la imagen ejecutar el siguiente comando:
-        docker build -t background-checks-frontend:v1.0 ./frontend
+       docker build -t background-checks-frontend:v1.0 ./frontend
 
 3. Ejecutar el docker compose para crear los contenedores:
 
     * Esteblecer el entorno (desarrollo o producción):
-        copiar el contenido del archivo .yml.dev o .yml.prod al docker-compose.yml
+       copiar el contenido del archivo .yml.dev o .yml.prod al docker-compose.yml
     * Para crear los contendores ejecutar el siguiente comando:
-        docker compose up
+       docker compose up

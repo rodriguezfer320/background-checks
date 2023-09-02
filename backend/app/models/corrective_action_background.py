@@ -1,13 +1,13 @@
-from . import Background
+from .background_web import BackgroundWeb
 
-class CorrectiveActionBackground(Background):
+class CorrectiveActionBackground(BackgroundWeb):
     
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -36,11 +36,13 @@ class CorrectiveActionBackground(Background):
 
         # PÁGINA 2 - OBTENER RESULTADO DE LA CONSULTA DE LOS ANTECEDENTES
         # se accede al selector que contiene la información
-        div_info = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']").text
+        div = self.driver.get_element_by_xpath("//div[@id='ctl00_ContentPlaceHolder3_respuesta'] //div[@class='row']")
+        self._data_web = div.text
 
         # se cierra el navegador
         self.driver.close_browser()
-        
+
+    def process_information(self, data):
         # se añade la información obtenida a una variable
-        self.text['title'] = div_info[div_info.index('La Policía Nacional de Colombia informa:'):div_info.index('Que a la fecha')].strip()
-        self.text['message'] = div_info[div_info.index('Que a la fecha'):div_info.index('De conformidad con la Ley')].strip()
+        self.description['title'] = self._data_web[self._data_web.index('La Policía Nacional de Colombia informa:'):self._data_web.index('Que a la fecha')].strip()
+        self.description['message'] = self._data_web[self._data_web.index('Que a la fecha'):self._data_web.index('De conformidad con la Ley')].strip()

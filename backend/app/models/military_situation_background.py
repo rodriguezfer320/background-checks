@@ -1,13 +1,13 @@
-from . import Background
+from .background_web import BackgroundWeb
 
-class MilitarySituationBackground(Background):
+class MilitarySituationBackground(BackgroundWeb):
     
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente judicial
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -33,30 +33,39 @@ class MilitarySituationBackground(Background):
             .perform()        
         div_result = self.driver.get_element_by_xpath("//div[@id='divResult']")
         display_prop = div_result.value_of_css_property('display')
+        
+        if display_prop != 'none':
+            self._data_web = [
+                self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text,
+                self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text,
+                self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text,
+                self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text
+            ]     
 
+        # se cierra el navegador
+        self.driver.close_browser()
+
+    def process_information(self, data):
         # redacción del mensaje del antecedente con la información obtiene del sitio web        
-        message = 'El ciudadano identificado con el número de documento {document}, '.format(document=data['document'])
+        message = f'El ciudadano identificado con el número de documento {data["document"]}, '
         dataDoc = ''
         
-        if display_prop == 'none':
+        if self._data_web:
+            message += 'TIENE DEFINIDA SU SITUACIÓN MILITAR.'
+            dataDoc = 'Datos referentes:\n'
+            dataDoc += f'• Nombres y apellidos: {self._data_web[0]}\n'
+            dataDoc += f'• Tipo de documento: {self._data_web[1]}\n'
+            dataDoc += f'• Documento: {self._data_web[2]}\n'
+            dataDoc += f'• Clase de libreta militar: {self._data_web[3]}'        
+        else:
             message += 'NO TIENE DEFINIDA SU SITUACIÓN MILITAR.'
             dataDoc = 'Motivos:\n'
             dataDoc += '• La libreta militar no se encontró o fue expedida antes del año de 1990.\n'
             dataDoc += '• El trámite se pudo haber realizado con la tarjeta de identidad.\n'
             dataDoc += '• El ciudadano no ha terminado el proceso de definición de su situación militar.\n'
             dataDoc += '• El documento pertenece a una mujer y la ley establece que no es obligatorio el servicio militar, sino que es voluntario.'
-        else:
-            message += 'TIENE DEFINIDA SU SITUACIÓN MILITAR.'
-            dataDoc = 'Datos referentes:\n'
-            dataDoc += '• Nombres y apellidos: {name}\n'.format(name=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenName']").text)
-            dataDoc += '• Tipo de documento: {type}\n'.format(type=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblTypeDocumentText']").text)
-            dataDoc += '• Documento: {document}\n'.format(document=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblNumberDocumentText']").text)
-            dataDoc += '• Clase de libreta militar: {type}'.format(type=self.driver.get_element_by_xpath("//span[@id='ctl00_MainContent_lblCitizenState']").text)
 
         # se añade la información obtenida a una variable
-        self.text['title'] = 'FUERZAS MILITARES DE COLOMBIA - COMANDO DE RECLUTAMIENTO Y CONTROL RESERVAS'
-        self.text['message'] = message
-        self.text['data'] = dataDoc
-
-        # se cierra el navegador
-        self.driver.close_browser()  
+        self.description['title'] = 'FUERZAS MILITARES DE COLOMBIA - COMANDO DE RECLUTAMIENTO Y CONTROL RESERVAS'
+        self.description['message'] = message
+        self.description['data'] = dataDoc

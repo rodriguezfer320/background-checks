@@ -4,6 +4,8 @@ WORKDIR /home/fsuv-bc-frontend
 
 COPY . .
 
+#RUN npm cache clean install
+
 RUN npm install
 
 RUN npm run build

@@ -2,6 +2,7 @@ from werkzeug.datastructures import ImmutableMultiDict, FileStorage
 from flask import request
 from flask_smorest.fields import Upload
 from marshmallow import Schema, ValidationError, fields, validate, validates, pre_load, post_load
+from ...utils import State
 import re, os
 
 class VerificationRequestArgsSchema(Schema):
@@ -12,17 +13,13 @@ class VerificationRequestArgsSchema(Schema):
             'invalid': 'Debe ingresar un número entero.'
         }
     )
-    user_sub_key = fields.String(
-        required = False,
-        missing = None
-    )
     search = fields.String(
         required = False, 
         missing = None
     )
     state = fields.String(
         required = False, 
-        missing = 'todos'
+        missing = State.ALL.value
     )
 
     @validates('page')
@@ -97,12 +94,6 @@ class VerificationRequestFileSchema(Schema):
             raise ValidationError('Debe seleccionar un archivo que no supere los 10Mb.')
 
 class VerificationRequestPostSchema(VerificationRequestPutDataSchema, VerificationRequestFileSchema):
-    user_sub_key = fields.String(
-        required = True,
-        error_messages = {
-            'required': 'Debe ingresar el sub_key del usuario.',
-        }
-    )
     antecedent = fields.Integer(
         required = True,
         error_messages = {

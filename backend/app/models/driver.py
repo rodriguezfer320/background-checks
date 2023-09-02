@@ -7,9 +7,9 @@ from decouple import config
 class Driver:
 
     def __init__(self):
-        self.options = webdriver.ChromeOptions()
-        self.browser = None
-        self.route = 'http://{host}:{port}/wd/hub'.format(
+        self._options = webdriver.ChromeOptions()
+        self._browser = None
+        self._route = 'http://{host}:{port}/wd/hub'.format(
             host=config('BROWSER_HOST'),
             port=config('BROWSER_PORT')
         )
@@ -81,43 +81,43 @@ class Driver:
             ]
         }
 
-        self.options.page_load_strategy = 'normal'
-        self.options.headless = False # (True) inicia el navegador en segundo plano
+        self._options.page_load_strategy = 'normal'
+        self._options.headless = False # (True) inicia el navegador en segundo plano
 
         for (key, value) in options['exp_opt'].items():
-            self.options.add_experimental_option(key, value)
+            self._options.add_experimental_option(key, value)
         
         for arg in options['args']:
-            self.options.add_argument(arg)
+            self._options.add_argument(arg)
 
     def load_browser(self, url):
-        self.browser = webdriver.Remote(command_executor=self.route, options=self.options)
-        #self.browser.set_page_load_timeout(20)
-        self.browser.implicitly_wait(10)
-        self.browser.get(url)
+        self._browser = webdriver.Remote(command_executor=self._route, options=self._options)
+        #self._browser.set_page_load_timeout(20)
+        self._browser.implicitly_wait(10)
+        self._browser.get(url)
 
     def close_browser(self):
-        if self.browser:
-            self.browser.quit()
+        if self._browser:
+            self._browser.quit()
         
-        self.browser = None
+        self._browser = None
 
     def get_action_chains(self):
-        return ActionChains(self.browser)
+        return ActionChains(self._browser)
 
     def get_element_by_xpath(self, xpath, multiple=False):
         if multiple:
-            return self.browser.find_elements(By.XPATH, xpath)
+            return self._browser.find_elements(By.XPATH, xpath)
         else:
-            return self.browser.find_element(By.XPATH, xpath)
+            return self._browser.find_element(By.XPATH, xpath)
 
     def get_select_by_xpath(self, xpath):
         return Select(self.get_element_by_xpath(xpath))
         
     def change_frame_by_css_selector(self, css_selector, default=True):
         if default:
-            self.browser.switch_to.parent_frame()
+            self._browser.switch_to.parent_frame()
 
         if not css_selector == 'body':
-            iframe = self.browser.find_element(By.CSS_SELECTOR, css_selector)
-            self.browser.switch_to.frame(iframe)
+            iframe = self._browser.find_element(By.CSS_SELECTOR, css_selector)
+            self._browser.switch_to.frame(iframe)

@@ -1,12 +1,13 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, TIMESTAMP, text, inspect
 from sqlalchemy.orm import relationship
-from ..database import db
+from ...database import db
 
 class CandidateBackgroundModel(db.Model):
     __tablename__ = 'candidate_background'
     __mapper_args__ = {
         'confirm_deleted_rows': False
     }
+
     candidate_id = Column(Integer, primary_key=True)
     background_id = Column(Integer, ForeignKey('background.id'), primary_key=True)
     description = Column(String, nullable=False)
@@ -19,5 +20,5 @@ class CandidateBackgroundModel(db.Model):
         self.background_id = background_id
         self.description = description
 
-    def to_json(self):
+    def to_dict(self):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

@@ -1,16 +1,16 @@
-from . import Background, SolveCaptcha
+from .background_web import BackgroundWeb
+from .solve_captcha import SolveCaptcha
 from os import remove
-import PyPDF2
+import PyPDF2, re
 
-class DisciplinaryBackground(Background):
+class DisciplinaryBackground(BackgroundWeb):
 
-    def __init__(self, driver=None):
-        super().__init__(driver)
-        self.path_pdf = self.dir_download + 'Certificado.pdf'
+    def __init__(self,  driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -53,12 +53,8 @@ class DisciplinaryBackground(Background):
 
             # se lanza exception si falla el assert
             assert div_info.text == 'EL NÚMERO DE IDENTIFICACIÓN INGRESADO NO SE ENCUENTRA REGISTRADO EN EL SISTEMA.'
-
-            # se cierra el navegador
-            self.driver.close_browser()
-            
-            # se añade la información obtenida a una variable
-            self.text['message'] = 'El ciudadano con Cédula de ciudadanía Número {}. NO REGISTRA SANCIONES NI INHABILIDADES VIGENTES'.format(data['cedula'])
+        
+            self._data_web = ''
         except:
             # PÁGINA 2 - DESCARGAR CERTIFICADO EN FORMATO PDF
             # se da click en el botón descargar
@@ -68,22 +64,33 @@ class DisciplinaryBackground(Background):
                 .click()\
                 .pause(5)\
                 .perform()
-
+        finally:
             # se cierra el navegador
-            self.driver.close_browser()
+            self.driver.close_browser()            
 
-            # se obtiene el texto del archivo pdf
-            with open(self.path_pdf, 'rb') as pdf_file:
-                pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-                extract_text = pdf_reader.getPage(0).extractText()
-                title = extract_text[extract_text.index('CERTIFICADO ORDINARIO'):extract_text.index('WEB')].strip()
-                date = extract_text[extract_text.index('Bogotá DC'):extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN')].strip()
-                message = extract_text[extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN'):extract_text.index('ADVERTENCIA:')].strip() + '.'
-
-            # se elimina el archivo pdf descargado
-            remove(self.path_pdf)
-
+    def process_information(self, data):
+        if self._data_web:
             # se añade la información obtenida a una variable
-            self.text['title'] = title
-            self.text['date'] = date
-            self.text['message'] = message
+            self.description['message'] = 'El ciudadano con Cédula de ciudadanía Número {}. NO REGISTRA SANCIONES NI INHABILIDADES VIGENTES'.format(data['cedula'])
+        else:
+            path_pdf = self.dir_download + 'Certificado.pdf'
+            
+            try:
+                # se obtiene el texto del archivo pdf
+                with open(path_pdf, 'rb') as pdf_file:
+                    pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+                    extract_text = pdf_reader.getPage(0).extractText()
+                    title_end_index = 'WEB' if re.search('WEB', extract_text) else 'PIB'
+                    title = extract_text[extract_text.index('CERTIFICADO ORDINARIO'):extract_text.index(title_end_index)].strip()
+                    date = extract_text[extract_text.index('Bogotá DC'):extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN')].strip()
+                    message = extract_text[extract_text.index('La PROCURADURIA GENERAL DE LA NACIÓN'):extract_text.index('ADVERTENCIA:')].strip() + '.'
+
+                # se añade la información obtenida a una variable
+                self.description['title'] = title
+                self.description['date'] = date
+                self.description['message'] = message                
+            except:
+                raise Exception('Error al procesar la información del antecedente disciplinario')
+            finally:
+                # se elimina el archivo pdf descargado
+                remove(path_pdf)

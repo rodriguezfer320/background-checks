@@ -1,13 +1,14 @@
-from . import Background, SolveRecaptcha
+from .background_web import BackgroundWeb
+from .solve_recaptcha import SolveRecaptcha
 
-class JudicialBackground(Background):
+class JudicialBackground(BackgroundWeb):
     
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -52,11 +53,13 @@ class JudicialBackground(Background):
         actions\
             .pause(2)\
             .perform()
-        div_info = self.driver.get_element_by_xpath("//section[@id='antecedentes'] //div[@class='ui-panel ui-widget ui-widget-content ui-corner-all']").text
+        div = self.driver.get_element_by_xpath("//section[@id='antecedentes'] //div[@class='ui-panel ui-widget ui-widget-content ui-corner-all']")
+        self._data_web = div.text
 
         # se cierra el navegador
         self.driver.close_browser()
 
+    def process_information(self, data):
         # se añade la información obtenida a una variable
-        self.text['title'] = div_info[div_info.index('La Policía Nacional de Colombia informa:'):div_info.index('Que siendo')].strip()
-        self.text['message'] = div_info[div_info.index('Que siendo'):div_info.index('En cumplimiento de la Sentencia')].strip()
+        self.description['title'] = self._data_web[self._data_web.index('La Policía Nacional de Colombia informa:'):self._data_web.index('Que siendo')].strip()
+        self.description['message'] = self._data_web[self._data_web.index('Que siendo'):self._data_web.index('En cumplimiento de la Sentencia')].strip()

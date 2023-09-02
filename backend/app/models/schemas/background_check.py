@@ -1,7 +1,7 @@
 from marshmallow import Schema, ValidationError, fields, validate, validates
-from ..entities import BackgroundModel
+from ..DAO import BackgroundDAO
 
-class BackgroundCheckQueryArgsSchema(Schema):
+class BackgroundCheckArgsSchema(Schema):
     document = fields.String(
         required = True,
         validate = validate.Regexp(
@@ -27,7 +27,7 @@ class BackgroundCheckQueryArgsSchema(Schema):
         elif len(antecedents) != len(set(antecedents)):
             raise ValidationError('No modifique las propiedades de las opciones, no deden haber opciones repetidas.')
         else:
-            result = BackgroundModel.query.with_entities(BackgroundModel.id).all()
+            result = BackgroundDAO.get_all({'type': None})
             ants_bd = [elem.id for elem in result]
 
             if any(int(elem) not in ants_bd for elem in antecedents):

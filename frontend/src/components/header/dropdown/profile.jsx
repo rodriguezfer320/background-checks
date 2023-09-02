@@ -15,6 +15,7 @@ class DropdownProfile extends React.Component {
 
 	async handleClick(event) {
 		event.preventDefault();
+        event.stopPropagation();
 
 		this.setState((state) => {
 			state.isLoading = true;
@@ -39,11 +40,15 @@ class DropdownProfile extends React.Component {
 						<b className="caret"></b>
 					</span>
 				</a>
-				<div className="dropdown-menu dropdown-menu-end justify-content-center me-1">
-					<Link to="/logout" className="dropdown-item" onClick={this.handleClick}>
-						Log Out &nbsp;&nbsp;&nbsp;&nbsp;
-						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-						{this.state.isLoading && <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>}
+				<div className="dropdown-menu dropdown-menu-end justify-content-center">
+					<Link to="/" onClick={this.handleClick} className="dropdown-item">
+						Log Out
+						{this.state.isLoading
+							? <div className="spinner-border spinner-border-sm" style={{ marginLeft: "60%" }} role="status">
+								<span className="sr-only">Loading...</span>
+							</div>
+							: <></>
+						}
 					</Link>
 				</div>
 			</div>

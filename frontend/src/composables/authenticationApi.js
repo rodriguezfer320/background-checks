@@ -16,12 +16,12 @@ api.interceptors.response.use(
             error = {
                 data: error.response.data, 
                 status: error.response.status,
-                statusText: error.response.statusText,
+                statusText: error.response.statusText
             };
         } else {
             error = {
-                status: error.code,
-                statusText: error.message
+                data: error.message,
+                status: error.code
             };  
         }
         

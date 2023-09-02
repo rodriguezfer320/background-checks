@@ -26,10 +26,6 @@ export const getUser = () => {
     return localStorage.getItem("user");
 }
 
-export const getUserSubKey = () => {
-    return localStorage.getItem("user_sub_key");
-}
-
 export const getUserName = () => {
     return localStorage.getItem("user_name");
 }

@@ -123,7 +123,12 @@ export default class ConsultBackground extends Component {
                     });
                 } else {
                     const message = (err.status === 404) ? err.data.message : "No se pudo obtener la información de los antecedentes";
-                    const title = (err.status === 404) ? err.data.status : "Fallo";
+                    const title = (err.status === 404) ? "USUARIO NO ENCONTRADO" : "FALLO";
+
+                    if (err.status === 404) {
+                        err.data.message =  err.data.status
+                    }
+                    
                     messageError(err, message, title);
                 }
             });

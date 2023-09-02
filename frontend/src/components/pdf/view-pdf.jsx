@@ -30,8 +30,14 @@ export default class ViewPDF extends React.Component {
                 return state;
             });
         }).catch(err => {
+            let message = "No se puedo cargar el documento, debido aún fallo inesperado. Estado: " + err.status;
+
+            if (err.status === 404 || err.status === 500) {
+                message = err.data.message
+            }
+
             this.setState(state => {
-                state.error = "No se puedo cargar el documento, debido aún fallo inesperado. Estado: " + err.status;
+                state.error = message;
                 return state;
             });
         });

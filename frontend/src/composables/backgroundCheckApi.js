@@ -17,23 +17,17 @@ api.interceptors.request.use(config => {
 
 api.interceptors.response.use(
     (response) => {
-        let respData = response.data;
-        let data = respData;
-        let pagination = {};
-
-        if (respData.data) {
-            data = respData.data;
-
-            if (respData.pagination) {
-                pagination = respData.pagination;
-            }
-        }
-        
-        return {
-            data: data,
-            pagination: pagination,
+        let resp = {
+            data: response.data,
             status: response.status
         };
+
+        if (resp.data.pagination) {
+            resp.pagination = resp.data.pagination
+            resp.data = resp.data.data
+        }
+        
+        return resp;
     }, async (error) => {
         if (error.response) {
             // se decodifica la respuesta enviada a json
@@ -45,7 +39,7 @@ api.interceptors.response.use(
             }
 
             // se refresca el token cuando ha expirado 
-            if (error.response.status === 401 && error.response.data.status === "TOKEN NOT VALID") {
+            if (error.response.status === 401 && error.response.data.message === "El token no es válido o ha caducado") {
                 const responseRefreshToken = await fetchDataAuth({
                     endpoint: "api/refresh/", 
                     method: "POST", 

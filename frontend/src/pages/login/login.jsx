@@ -4,6 +4,9 @@ import { getRefreshToken, redirectUser } from "./../../composables/sessionData.j
 import { fetchDataAuth } from "./../../composables/authenticationApi.js";
 import { fetchDataProfile } from "./../../composables/profileApi.js";
 import { Roles, BaseUrlFrontLogin } from "./../../composables/config.js";
+import { messageError } from "./../../composables/alert.js";
+
+// img
 import RegisterBg from "./../../assets/img/login/register-bg.png";
 import logoUnivalle from "./../../assets/img/login/logo-univalle.png";
 
@@ -15,10 +18,7 @@ class Login extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			form: {
-				data: {},
-				error: {}
-			},
+			refresh_token: null,
 			redirect: getRefreshToken() ? true : false 
 		};
 		this.handleChange = this.handleChange.bind(this);
@@ -26,94 +26,102 @@ class Login extends React.Component {
 	}
 
 	handleChange(event) {
-		const id = event.target.id;
-		const value = event.target.value;
 		this.setState(state => {
-			state.form.data[id] = value;
+			state.refresh_token = event.target.value;
 			return state;
 		});
 	}
 
 	async handleLogin(event) {
 		event.preventDefault();
-		const refreshToken = this.state.form.data["refresh_token"];
-
-		this.setState(state => {
-			state.form.error = {};
-			return state;
-		});
 		
 		try {
+			// se decodifica el el refresh token
 			const responseDecodeToken = await fetchDataAuth({ 
 				endpoint: "/user/decode_jwt/",
 				method: "POST",
 				data: {
-					"auth-token": refreshToken
+					"auth-token": this.state.refresh_token
 				}
 			});
 
-			const responseToken = await fetchDataAuth({ 
-				endpoint: "api/refresh/",
-				method: "POST",
-				data: {
-					"refresh": refreshToken
-				}
-			});
-			
-			if (responseDecodeToken.status === 200 && responseToken.status === 200) {
-				const userRole = responseDecodeToken.data.role;
-				localStorage.setItem("access_token", responseToken.data.access);
-				localStorage.setItem("refresh_token", refreshToken);
-				localStorage.setItem("role", userRole);
-				localStorage.setItem("user_sub_key", responseDecodeToken.data.sub_key);
-				
-				const responseUserInfo = await fetchDataAuth({ 
-					endpoint: "/user/get_user_basic_info/",
-					method: "GET",
-					auth: true
+			if (responseDecodeToken.status === 200) {
+				// se obtiene un nuevo token
+				const responseToken = await fetchDataAuth({ 
+					endpoint: "api/refresh/",
+					method: "POST",
+					data: {
+						"refresh": this.state.refresh_token
+					}
 				});
 
-				if (responseUserInfo.status === 200) {					
-					localStorage.setItem("user_name", responseUserInfo.data.user_name);
-					localStorage.setItem("user_last_name", responseUserInfo.data.user_last_name);				
-				} else {
-					console.log("Error al obtener los datos del usuario. Estado: " + responseUserInfo.status);
-				}
-
-				if (userRole === Roles.candidate || userRole === Roles.company) {
-					const responseProfilePicture = await fetchDataProfile({
+				if (responseToken.status === 200) {
+					// se añaden los datos de la sesión requeridos al localstorage
+					const userRole = responseDecodeToken.data.role;
+					localStorage.setItem("access_token", responseToken.data.access);
+					localStorage.setItem("refresh_token", this.state.refresh_token);
+					localStorage.setItem("role", userRole);
+					
+					// se obtiene información del usuario
+					const responseUserInfo = await fetchDataAuth({ 
+						endpoint: "/user/get_user_basic_info/",
 						method: "GET",
-						userRole
+						auth: true
 					});
 	
-					if (responseProfilePicture.status === 200) {
-						localStorage.setItem("profile_picture", "https://res.cloudinary.com/dlhcdji3v/" + responseProfilePicture.data.profile_picture);
+					if (responseUserInfo.status === 200) {					
+						localStorage.setItem("user_name", responseUserInfo.data.user_name);
+						localStorage.setItem("user_last_name", responseUserInfo.data.user_last_name);				
 					} else {
-						console.log("Error al obtener la foto de perfil del usuario. Estado: " + responseProfilePicture.status);
+						messageError(
+							responseUserInfo,
+							"Error al obtener los datos del usuario"
+						);
 					}
-				}
-
-				this.setState(state => {
-					state.redirect = true;
-					return state;
-				});
-			} else {
-				let message = ""
-
-				if(responseDecodeToken.status === 200) {
-					message = (responseDecodeToken.data) ? responseToken.data.detail : "Error: " + responseToken.status;
+	
+					if (userRole === Roles.candidate || userRole === Roles.company) {
+						// se obtiene la foto del perfil de usuario
+						const responseProfilePicture = await fetchDataProfile({
+							method: "GET",
+							userRole
+						});
+		
+						if (responseProfilePicture.status === 200) {
+							if (responseProfilePicture.data.profile_picture) {
+								localStorage.setItem("profile_picture", "https://res.cloudinary.com/dlhcdji3v/" + responseProfilePicture.data.profile_picture);
+							}
+						} else {
+							messageError(
+								responseProfilePicture,
+								"Error al obtener la foto de perfil del usuario"
+							);
+						}
+					}
+	
+					this.setState(state => {
+						state.redirect = true;
+						return state;
+					});
 				} else {
-					message = (responseDecodeToken.data) ? responseDecodeToken.data : "Error: " + responseDecodeToken.status;
+					messageError(
+						responseToken,
+						"Error al obtener un nuevo token"
+					);
 				}
-
-				this.setState(state => {
-					state.form.error["refresh_token"] = message;
-					return state;
-				});
+			} else {
+				messageError(
+					responseDecodeToken,
+					"Error al decodificar el refresh token"
+				);
 			}
 		} catch (err) {
-			console.log("Error login");
-			console.log(err);
+			messageError(
+				{
+					status: err.name,
+					data: err.message
+				},
+				"Error al recuperar la sesión"
+			);
 		}
 	}
 
@@ -151,10 +159,7 @@ class Login extends React.Component {
 								<input type="text" className="form-control h-45px fs-13px" 
 								placeholder="Refresh token" id="refresh_token" onChange={this.handleChange}/>
 								<label htmlFor="refresh_token" className="d-flex align-items-center fs-13px text-gray-600">Refresh token</label>
-							</div>
-							<div className="invalid-feedback" style={{"display": "flex"}}>
-								{this.state.form.error.refresh_token ?? ""}
-							</div>			
+							</div>		
                             <div className="mb-4 mt-4">
                                 <button type="submit" className="btn btn-primary d-block w-100 btn-lg h-45px fs-13px">Ingresar</button>
                             </div>

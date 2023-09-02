@@ -1,209 +1,143 @@
-from flask import jsonify, views, send_file, request
-from flask_smorest import Blueprint
-from sqlalchemy.sql.expression import cast
-from sqlalchemy import String
-from os import getcwd
-from datetime import datetime
-from ..entities import VerificationRequestModel
-from ..schemas import (VerificationRequestArgsSchema, VerificationRequestPostSchema, VerificationRequestPutDataSchema,
-                       VerificationRequestPutStateSchema, VerificationRequestFileSchema)
-from ..database import db
+from flask import request
+from flask_smorest import Blueprint, abort
+from ..models import (
+    ForbiddenException, NotFoundException, FileSaveException, File, 
+    VerificationRequestDAO, VerificationRequestArgsSchema, VerificationRequestPostSchema, 
+    VerificationRequestPutDataSchema, VerificationRequestPutStateSchema, VerificationRequestFileSchema
+)
 from ..auth import authentication_required_and_permissions
-from ..utils import ROLES
+from ..utils import Role, State
+from ..auth import _verify_token
 
-vg = Blueprint('verification_request', __name__)
+verificationRequestBlueprint = Blueprint('verification_request', __name__)
 
-class VerificationRequestController(views.MethodView):
-
-    def __init__(self):
-        super().__init__()
-        self.dir_file = getcwd() + r'/app/static/verification_request_files/{filename}.pdf'
-        self.states = ('todos', 'pendiente', 'rechazada', 'corregida', 'aprobada')
-
-    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate'], ROLES['officer']])
-    @vg.arguments(VerificationRequestArgsSchema, location='query')
-    def get(self, args):
-        # se forma la query de la consulta
-        query = VerificationRequestModel.query
-
-        # se aplica el filtro por documento
-        if args['user_sub_key']:
-            query = query.filter(VerificationRequestModel.user_sub_key == args['user_sub_key'])
-
-            # se aplica el filtro de busqueda por id
-            if args['search']:
-                query = query.filter(cast(VerificationRequestModel.id, String).like(args['search']))
-
-        # se aplica el filtro de busqueda por id o documento
-        elif args['search']:
-            query = query.filter(cast(VerificationRequestModel.id, String).like(args['search']) |
-                                 cast(VerificationRequestModel.candidate_id, String).like(args['search']))
-
-        # se aplica el filtro por estado
-        if args['state'] != self.states[0]:
-            query = query.filter(VerificationRequestModel.state == args['state'])            
-
-        verification_requests = db.paginate(query.order_by(VerificationRequestModel.id), page=args['page'], per_page=10, error_out=False)
-
-        return jsonify({
-            'code': 200,
-            'status': 'SUCCESS',
-            'data': [vr.to_json() for vr in verification_requests.items],
-            'pagination': {
-                'first': verification_requests.first,
-                'last': verification_requests.last,
-                'total': verification_requests.total,
-                'prev_page': verification_requests.prev_num,
-                'next_page': verification_requests.next_num,
-                'current_page': verification_requests.page,
-                'pages': [page for page in verification_requests.iter_pages()]
+class VerificationRequestController:
+    
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.CANDIDATE.value, Role.OFFICER.value])
+    @verificationRequestBlueprint.arguments(VerificationRequestArgsSchema, location='query')
+    @verificationRequestBlueprint.response(200)
+    def get_all(args):
+        try:
+            token = request.headers.get('Authorization').split()[1]
+            args['token_data'] = _verify_token(token)
+            verification_requests = VerificationRequestDAO.get_all(args)
+            return {
+                'data': [vr.to_dict() for vr in verification_requests.items],
+                'pagination': {
+                    'first': verification_requests.first,
+                    'last': verification_requests.last,
+                    'total': verification_requests.total,
+                    'prev_page': verification_requests.prev_num,
+                    'next_page': verification_requests.next_num,
+                    'current_page': verification_requests.page,
+                    'pages': [page for page in verification_requests.iter_pages()]
+                }
             }
-        }), 200
+        except:
+            abort(500, message='Ocurrió un error inesperado al obtener las solicitudes de verificación')
 
-    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate'], ROLES['company'], ROLES['officer']])
-    def get_file(self, id):
-        verification_request = db.session.get(VerificationRequestModel, id)
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.COMPANY.value, Role.CANDIDATE.value, Role.OFFICER.value])
+    @verificationRequestBlueprint.response(200)
+    def get_file(id):
+        try:
+            verification_request = VerificationRequestDAO.get(id)
 
-        if verification_request:
-            try:
-                filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
-                return send_file(self.dir_file.format(filename=filename))
-            except FileNotFoundError:
-                return jsonify({
-                    'code': 400,
-                    'status': 'FAILD',
-                    'message': 'No se pudo obtener el archivo.'
-                }), 400
-        else:
-            return jsonify({
-                'code': 404,
-                'status': 'VERIFICATION REQUEST NOT FOUND',
-                'message': 'No se encontró una solicitud de verificación.'
-            }), 404
+            if verification_request:
+                filename = verification_request.user_sub_key + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
+                return File.get(filename)
 
-    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
-    @vg.arguments(VerificationRequestPostSchema, location='form')
-    def create(self, form):
-        # se consulta si ya se ha registrado la solicitud para ese antecedente
-        verification_request = VerificationRequestModel.query\
-                                                       .filter(VerificationRequestModel.user_sub_key == form['user_sub_key'])\
-                                                       .filter(VerificationRequestModel.background_id == form['antecedent'])\
-                                                       .first()
-        if verification_request is None:
+            raise NotFoundException
+        except NotFoundException:
+            abort(404, message=f'No se pudo obtener el documento de la solicitud debido a que no se encontró una solicitud asociada al ID: {id}')
+        except FileNotFoundError:
+            abort(404, message='No se encontró el documento de la solicitud')
+        except:
+            abort(500, message='Ocurrió un error inesperado al obtener el documento de la solicitud')
+
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.CANDIDATE.value])
+    @verificationRequestBlueprint.arguments(VerificationRequestPostSchema, location='form')
+    @verificationRequestBlueprint.response(201)
+    def create(form):
+        try:
             # se crea la instancia de la solicitud
-            verification_request = VerificationRequestModel(
-                user_sub_key=form['user_sub_key'],
-                background_id=form['antecedent'],
-                title=form['title'].strip(),
-                candidate_id=form['document'].strip(),
-                comment='N/A',
-                state=self.states[1]
-            )
+            token = request.headers.get('Authorization').split()[1]
+            form['token_data'] = _verify_token(token)
+            verification_request = VerificationRequestDAO.save(form)
 
-            # se guardan los datos en la BD
-            db.session.add(verification_request)
-            db.session.commit()
-
-            # se guarda el archivo en una ubicación del servidor
-            filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
-            form['file_document'].save(self.dir_file.format(filename=filename))
-
-            return jsonify({
-                'code': 201,
-                'status': 'SUCCESS',
-                'message': 'La solicitud se ha creado correctamente.'
-            }), 201
-        else:
-            return jsonify({
-                'code': 400,
-                'status': 'FAILD',
-                'message': 'Solo se puede crear una solicitud por tipo de antecedente.'
-            }), 400
-
-    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
-    @vg.arguments(VerificationRequestPutDataSchema, location='json')
-    def update_data(self, data, id):
-        # se consulta una solicitud especifica creada por un candidato
-        verification_request = db.session.get(VerificationRequestModel, id)
-        if verification_request:
-            # se asiganan los nuevos datos
-            verification_request.title = data['title'].strip()
-            verification_request.candiate_id = data['document']
-            verification_request.updated_at = datetime.now()
-
-            # se actualizan los datos en la BD
-            db.session.commit()
-
-            return jsonify({
-                'code': 201,
-                'status': 'SUCCESS',
-                'message': 'Los datos de la solicitud se han actualizado correctamente.'
-            }), 201
-        else:
-            return jsonify({
-                'code': 404,
-                'status': 'VERIFICATION REQUEST NOT FOUND',
-                'message': 'No se encontró una solicitud de verificación.'
-            }), 404
-
-    @authentication_required_and_permissions(allowedRoles=[ROLES['officer']])
-    @vg.arguments(VerificationRequestPutStateSchema, location='json')
-    def update_state(self, data, id):
-        # se consulta una solicitud especifica creada por un candidato
-        verification_request = db.session.get(VerificationRequestModel, id)
-
-        if verification_request:
-            # se asiganan los nuevos datos
-            verification_request.comment = data['comment'].strip()
-            verification_request.state = data['state']
-            verification_request.updated_at = datetime.now()
-
-            # se actualizan los datos en la BD
-            db.session.commit()
-
-            return jsonify({
-                'code': 201,
-                'status': 'SUCCESS',
-                'message': 'El estado de la solicitud se ha actualizado correctamente.'
-            }), 201
-        else:
-            return jsonify({
-                'code': 404,
-                'status': 'VERIFICATION REQUEST NOT FOUND',
-                'message': 'No se encontró una solicitud de verificación.'
-            }), 404
-
-    @authentication_required_and_permissions(allowedRoles=[ROLES['candidate']])
-    @vg.arguments(VerificationRequestFileSchema, location='files')
-    def update_document(self, files, id):
-        # se consulta una solicitud especifica creada por un candidato
-        verification_request = db.session.get(VerificationRequestModel, id)
-
-        if verification_request:
-            if verification_request.state == self.states[2]:
-                # se actualizan los datos en la BD
-                verification_request.state = self.states[3]
-                verification_request.updated_at = datetime.now()
-                db.session.commit()
-
+            if verification_request:
                 # se guarda el archivo en una ubicación del servidor
-                filename = str(verification_request.user_sub_key) + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
-                files['file_document'].save(self.dir_file.format(filename=filename))
+                filename = verification_request.user_sub_key + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
+                
+                try:
+                    File.save(form['file_document'], filename)
+                    return {'message': 'La solicitud se ha creado correctamente'}
+                except:
+                    VerificationRequestDAO.delete(verification_request.id)
+                    raise FileSaveException
 
-                return jsonify({
-                    'code': 201,
-                    'status': 'SUCCESS',
-                    'message': 'El documento de la solicitud se ha actualizado correctamente.'
-                }), 201
-            else:
-                return jsonify({
-                    'code': 400,
-                    'status': 'FAILD',
-                    'message': 'El documento de la solicitud solo se puede actualizar cuando el estado sea rechazada.'
-                }), 400
-        else:
-            return jsonify({
-                'code': 404,
-                'status': 'VERIFICATION REQUEST NOT FOUND',
-                'message': 'No se encontró una solicitud de verificación.'
-            }), 404
+            raise ForbiddenException
+        except FileSaveException:
+            abort(400, message='No se pudo crear la solicitud debido a que ocurrio un error al guardar el documento de la solicitud')
+        except ForbiddenException:
+            abort(403, message='No se pudo crear la solicitud debido a que solo se puede crear una solicitud por tipo de antecedente')
+        except:
+            abort(500, message='Ocurrió un error inesperado al crear la solicitud')
+    
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.CANDIDATE.value])
+    @verificationRequestBlueprint.arguments(VerificationRequestPutDataSchema, location='json')
+    @verificationRequestBlueprint.response(201)
+    def update_data(json, id):
+        try:
+            if VerificationRequestDAO.put_data(json, id): return {'message': 'Los datos de la solicitud se han actualizado correctamente'}
+            raise NotFoundException
+        except NotFoundException:
+            abort(404, message=f'No se pudo actualizar los datos de la solicitud debido a que no se encontró una solicitud asociada al ID: {id}')
+        except:
+            abort(500, message='Ocurrió un error inespareado al actualizar los datos de la solicitud')
+
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.OFFICER.value])
+    @verificationRequestBlueprint.arguments(VerificationRequestPutStateSchema, location='json')
+    @verificationRequestBlueprint.response(201)
+    def update_state(json, id):
+        try:
+            if VerificationRequestDAO.put_state(json, id): return {'message': 'El estado de la solicitud se ha actualizado correctamente'}
+            raise NotFoundException
+        except NotFoundException:
+            abort(404, message=f'No se pudo actualizar el estado de la solicitud debido a que no se encontró una solicitud asociada al ID: {id}')
+        except:
+            abort(500, message='Ocurrió un error inespareado al actualizar el estado de la solicitud')
+    
+    @staticmethod
+    @authentication_required_and_permissions(allowedRoles=[Role.CANDIDATE.value])
+    @verificationRequestBlueprint.arguments(VerificationRequestFileSchema, location='files')
+    @verificationRequestBlueprint.response(201)
+    def update_document(files, id):
+        try:
+            verification_request = VerificationRequestDAO.put_document(id)
+
+            if verification_request:
+                if verification_request.state == State.CORRECTED.value:
+                    # se guarda el archivo en una ubicación del servidor
+                    filename = verification_request.user_sub_key + '_' + str(verification_request.background_id) + '_' + verification_request.background.name
+                    try:
+                        File.save(files['file_document'], filename)
+                        return {'message': 'El documento de la solicitud se ha actualizado correctamente'}
+                    except:
+                        VerificationRequestDAO.put_state({'comment': verification_request.comment, 'state': State.DENIED.value}, verification_request.id)
+                        raise FileSaveException
+            
+                raise ForbiddenException            
+            raise NotFoundException
+        except FileSaveException:
+            abort(400, message='No se pudo actualizar el documento de la solicitud debido a que ocurrio un error al guardar el docuemento')
+        except ForbiddenException:
+            abort(403, message=f'No se pudo actualizar el documento de la solicitud debido a que su estado debe ser rechazada')
+        except NotFoundException:
+            abort(404, message=f'No se pudo actualizar el documento de la solicitud debido a que no se encontró una solicitud asociada al ID: {id}')
+        except:
+            abort(500, message='Ocurrió un error inesperado al actualizar el documento de la solicitud')

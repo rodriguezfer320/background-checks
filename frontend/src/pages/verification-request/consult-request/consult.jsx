@@ -7,8 +7,6 @@ import {
     searchFieldValidator, titleFieldValidator, documentFieldValidator,
     stateFieldValidator, commentFieldValidator, documentFileFieldValidator
 } from "./../../../composables/validators.js";
-import { getUserRole, getUserSubKey } from "./../../../composables/sessionData.js";
-import { Roles } from "./../../../composables/config.js";
 import { ConsultContext } from "./context.js";
 import { messageError, messageSuccess } from "./../../../composables/alert.js";
 
@@ -32,8 +30,7 @@ export default class Consult extends React.Component {
             },
             consult: {
                 data: {
-                    state: "todos",
-                    user_sub_key: getUserRole() === Roles.candidate ? getUserSubKey() : ""
+                    state: "todos"
                 },
                 error: {},
                 dataRes: [],
@@ -90,7 +87,6 @@ export default class Consult extends React.Component {
                 method: "GET",
                 params: new URLSearchParams({
                     page,
-                    user_sub_key: this.state.consult.data.user_sub_key,
                     state: this.state.consult.data.state,
                     search: this.state.consult.data.search ?? ""
                 })
@@ -115,13 +111,17 @@ export default class Consult extends React.Component {
         let data = this.state.modal.data;
         const { idModal, idRequest } = this.state.modal;
         let urlName = "";
+        let message = "";
 
         if (idModal === "modalEditData") {
             urlName = "datos";
+            message = "No se pudo actualizar los datos de la solicitud";
         } else if (idModal === "modalEditState") {
             urlName = "estado";
+            message = "No se pudo actualizar el estado de la solicitud";
         } else if (idModal === "modalEditDoc") {
             urlName = "documento";
+            message = "No se pudo actualizar el documento de la solicitud";
 
             const dataTemp = new FormData();
             Object.keys(data).forEach((key) => {
@@ -147,7 +147,7 @@ export default class Consult extends React.Component {
                 state.modal.isLoading = false;
                 return state;
             });
-            messageSuccess(resp.data.status, resp.data.message);
+            messageSuccess(resp.data.message);
             document.getElementById("close-modal").click();
         }).catch((err) => {
             this.setState(state => {
@@ -161,7 +161,7 @@ export default class Consult extends React.Component {
                     return state;
                 });
             } else {
-                messageError(err, "No se pudieron actualizar los datos enviados");
+                messageError(err, message);
             } 
         });
     }

@@ -1,13 +1,13 @@
-from . import Background
+from .background_web import BackgroundWeb
 
-class TrafficInfractionBackground(Background):
+class TrafficInfractionBackground(BackgroundWeb):
     
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -31,26 +31,27 @@ class TrafficInfractionBackground(Background):
         # se obtiene la información consultada en la página
         try: div_abstract = self.driver.get_element_by_xpath("//div[@class='card bg-estado-section border-0 box-shadow-sm']")
         except: div_abstract = self.driver.get_element_by_xpath("//div[@id='resumenEstadoCuenta']")
-        finally: info = div_abstract.text.split('\n')
+        finally: self._data_web = div_abstract.text.split('\n')
 
         # se cierra el navegador
-        self.driver.close_browser()
+        self.driver.close_browser()        
 
+    def process_information(self, data):
         # cantidad de multas y comparendos que presenta el candidato
-        comparendos = int(info[1].split(' ')[1])
-        fines = int(info[2].split(' ')[1])
+        comparendos = int(self._data_web[1].split(' ')[1])
+        fines = int(self._data_web[2].split(' ')[1])
 
         # redacción del mensaje del antecedente con la información obtiene del sitio web        
-        message = 'El ciudadano identificado con el número de documento {document}, '.format(document=data['document'])
+        message = f'El ciudadano identificado con el número de documento {data["document"]}, '
         
         if fines > 0:
-            message += 'posee {quantity} multa(s) a la fecha pendientes de pago'.format(quantity=fines)
+            message += f'posee {fines} multa(s) a la fecha pendientes de pago'
         else:
             message += 'no posee a la fecha pendientes de pago por concepto de multas'
         
         if comparendos > 0:
             message += ' y' if fines > 0 else ', pero'
-            message += ' tiene {quantity} comparendo(s)'.format(quantity=comparendos)
+            message += f' tiene {comparendos} comparendo(s)'
         else:
             message += ' y no tiene comparendos'
 
@@ -58,8 +59,8 @@ class TrafficInfractionBackground(Background):
 
         if fines > 0 or comparendos > 0:
             message += '\nPara más información sobre las multas y/o comparendos que presenta el candidato '
-            message += 'consulte el siguiente link: https://www.fcm.org.co/simit/#/estado-cuenta?numDocPlacaProp={document}'.format(document=data['document'])
+            message += f'consulte el siguiente link: https://www.fcm.org.co/simit/#/estado-cuenta?numDocPlacaProp={data["document"]}'
 
         # se añade la información obtenida a una variable
-        self.text['title'] = 'Sistema Integrado de información sobre multas y sanciones por infracciones de tránsito'
-        self.text['message'] = message
+        self.description['title'] = 'Sistema Integrado de información sobre multas y sanciones por infracciones de tránsito'
+        self.description['message'] = message

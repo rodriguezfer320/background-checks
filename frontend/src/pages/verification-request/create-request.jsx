@@ -6,7 +6,6 @@ import {
     titleFieldValidator, documentFieldValidator,
     antecedentFieldValidator, documentFileFieldValidator
 } from "./../../composables/validators.js";
-import { getUserSubKey } from "./../../composables/sessionData.js";
 import { messageError, messageSuccess } from "./../../composables/alert.js";
 
 export default class CreateRequest extends React.Component {
@@ -19,9 +18,7 @@ export default class CreateRequest extends React.Component {
                 isLoading: false
             },
             form: {
-                data: {
-                    user_sub_key: getUserSubKey()
-                },
+                data: {},
                 error: {},
                 isLoading: false
             }
@@ -102,15 +99,13 @@ export default class CreateRequest extends React.Component {
                 data: dataTemp
             }).then((resp) => {
                 this.setState(state => {
-                    state.form.data = {
-                        user_sub_key: state.form.data.user_sub_key
-                    };
+                    state.form.data = {};
                     state.form.error = {};
                     state.form.isLoading = false;
                     return state;
                 });
                 event.target.reset();
-                messageSuccess(resp.data.status, resp.data.message);
+                messageSuccess(resp.data.message);
             }).catch((err) => {
                 this.setState(state => {
                     state.form.isLoading = false;
@@ -123,8 +118,7 @@ export default class CreateRequest extends React.Component {
                         return state;
                     });
                 } else {
-                    const message = (err.data && err.data.status === "FAILD") ? err.data.message : "No se pudo crear la solicitud de verificación";
-                    messageError(err, message);
+                    messageError(err, "No se pudo crear la solicitud de verificación");
                 }
             });
         }

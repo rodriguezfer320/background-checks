@@ -1,16 +1,16 @@
-from . import Background, SolveRecaptcha
+from .background_web import BackgroundWeb
+from .solve_recaptcha import SolveRecaptcha
 from os import remove
 import PyPDF2
 
-class FiscalBackground(Background):
+class FiscalBackground(BackgroundWeb):
     
-    def __init__(self, driver):
-        super().__init__(driver)
-        self.path_pdf = self.dir_download + '{filename}.pdf'
+    def __init__(self, driver, description):
+        super().__init__(driver, description)
 
-    def search_for_background(self, data):
+    def get_background_information(self, data):
         # se accede a la url del antecedente
-        self.driver.load_browser(data['url'])
+        self.driver.load_browser(data['background'].url)
         
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
         actions = self.driver.get_action_chains()
@@ -47,20 +47,26 @@ class FiscalBackground(Background):
             .perform()
         
         # se cierra el navegador
-        self.driver.close_browser()
+        self.driver.close_browser()  
+
+    def process_information(self, data):
+        path_pdf = self.dir_download + f'{data["document"]}.pdf'
         
-        # se obtiene el texto del archivo pdf
-        with open(self.path_pdf.format(filename=data["document"]), 'rb') as pdf_file:
-            pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-            extract_text = pdf_reader.getPage(0).extractText().strip()
-            title = extract_text[extract_text.index('LA CONTRALORÍA'):extract_text.index('Que una vez consultado')].strip()
-            message = extract_text[extract_text.index('Que una vez consultado'):extract_text.index('Esta Certificación es válida')].strip()
-            dataDoc = extract_text[extract_text.index('Tipo Documento'):extract_text.index('Generó: WEB')].strip()
+        try:
+            # se obtiene el texto del archivo pdf
+            with open(path_pdf, 'rb') as pdf_file:
+                pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+                extract_text = pdf_reader.getPage(0).extractText().strip()
+                title = extract_text[extract_text.index('LA CONTRALORÍA'):extract_text.index('Que una vez consultado')].strip()
+                message = extract_text[extract_text.index('Que una vez consultado'):extract_text.index('Esta Certificación es válida')].strip()
+                dataDoc = extract_text[extract_text.index('Tipo Documento'):extract_text.index('Generó: WEB')].strip()
 
-        # se elimina el archivo pdf descargado
-        remove(self.path_pdf.format(filename=data["document"]))
-
-        # se añade la información obtenida a una variable
-        self.text['title'] = title
-        self.text['message'] = message
-        self.text['data'] = dataDoc
+            # se añade la información obtenida a una variable
+            self.description['title'] = title
+            self.description['message'] = message
+            self.description['data'] = dataDoc                
+        except:
+            raise Exception('Error al procesar la información del antecedente fiscal')
+        finally:
+            # se elimina el archivo pdf descargado
+            remove(path_pdf) 

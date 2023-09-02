@@ -14,11 +14,11 @@ class SolveCaptcha:
         }
 
         # se carga el controlador de acciones de entrada de dispositivo virtualizadas
-        actions = self.driver.get_action_chains()
+        actions = self._driver.get_action_chains()
 
         while True:
             # se obitine la pregunta generada por el captcha
-            question = self.driver.get_element_by_xpath("//span[@id='lblPregunta']").text
+            question = self._driver.get_element_by_xpath("//span[@id='lblPregunta']").text
             result = None
 
             # si la pregunta es una opraciòn matematica se resulve
@@ -41,24 +41,14 @@ class SolveCaptcha:
             if result is None:
                 # se busca una nueva pregunta
                 actions\
-                    .move_to_element(self.driver.get_element_by_xpath("//input[@id='ImageButton1']"))\
+                    .move_to_element(self._driver.get_element_by_xpath("//input[@id='ImageButton1']"))\
                     .click()\
                     .perform()
             else:
                 # se ingresa la respuesta de la pregunta
                 actions\
-                    .move_to_element(self.driver.get_element_by_xpath("//input[@id='txtRespuestaPregunta']"))\
+                    .move_to_element(self._driver.get_element_by_xpath("//input[@id='txtRespuestaPregunta']"))\
                     .click_and_hold()\
                     .send_keys(str(result))\
                     .perform()
                 break
-    
-    #Getters
-    @property
-    def driver(self):
-        return self._driver
-
-    #Setters
-    @driver.setter
-    def driver(self, driver):
-        self._driver = driver

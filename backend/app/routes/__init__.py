@@ -1,1 +1,4 @@
+from .background import get_background_blueprint
+from .background_check import get_background_check_blueprint
+from .verification_request import get_verification_request_blueprint
 from .api import api

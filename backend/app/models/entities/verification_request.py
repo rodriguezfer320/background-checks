@@ -1,12 +1,13 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, TIMESTAMP, text, inspect
 from sqlalchemy.orm import relationship
-from ..database import db
+from ...database import db
 
 class VerificationRequestModel(db.Model):
     __tablename__ = 'verification_request'
     __mapper_args__ = {
         'confirm_deleted_rows': False
     }
+
     id = Column(Integer, autoincrement=True, primary_key=True)
     user_sub_key = Column(String, nullable=False)
     background_id = Column(Integer, ForeignKey('background.id'))
@@ -25,6 +26,6 @@ class VerificationRequestModel(db.Model):
         self.candidate_id = candidate_id
         self.comment = comment
         self.state = state
-
-    def to_json(self):
+    
+    def to_dict(self):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

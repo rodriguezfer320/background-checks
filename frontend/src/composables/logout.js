@@ -14,13 +14,18 @@ export const logout = async () => {
     
         if (responseLogout.status === 205 || (responseLogout.data && responseLogout.data.error === "Token is blacklisted")) {					
             localStorage.clear();
-            window.location = "/fs-uv/bc/login";				
+            window.location = "/fs-uv/bc/login";
         } else {
             messageError(responseLogout, "No se puedo cerrar la sesión debido aún fallo.");
         }
     } catch (err) {
-        console.log("Error logout");
-        console.log(err);
+        messageError(
+            {
+                status: err.name,
+                data: err.message
+            },
+            "Error al cerrar la sesión"
+        );
     } finally {
         return false;
     }

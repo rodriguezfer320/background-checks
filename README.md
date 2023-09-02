@@ -1,7 +1,7 @@
 # background-checks
 Es un microservicio de la aplicación de Finishing Schools Univalle que permite la verificación de los antecedentes de un candidato específico.
 
-Para ejecutar este microservicio, se deben ejecutar los siguientes pasos:
+Para iniciar este microservicio, se deben ejecutar los siguientes pasos:
 
 1. Crear la imagen docker del backend:
     
